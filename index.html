@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4f91">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Apps TX">
+<title>Apps Grupo TX</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%231d4f91%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Arial%27 font-weight=%27700%27 font-size=%2728%27 fill=%27white%27 text-anchor=%27middle%27%3ETX%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+/* Layout: centered launcher — brand header, three app tiles, login panel that replaces the tiles */
+:root{
+  --bg:#eef0f2;--panel:#fff;--panel-2:#f6f7f8;--line:#d9dde2;--fg:#15191e;--fg-2:#4a525c;--fg-3:#737c87;
+  --accent:#1d4f91;--accent-2:#e3ecf8;--accent-fg:#fff;--good:#1f7a3f;--good-bg:#e2f3e7;--bad:#b3261e;--bad-bg:#fbe5e3;--amber:#b86e00;--amber-bg:#fdf1dc;
+  --crm:#1d4f91;--silos:#8a5a12;--ent:#1f7a3f;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#111418;--panel:#191d22;--panel-2:#1f242a;--line:#2e353d;--fg:#eef1f4;--fg-2:#b7bfc8;--fg-3:#8a939d;--accent:#6fa3e8;--accent-2:#1d2d44;--accent-fg:#0d1624;--good:#5cc983;--good-bg:#16301f;--bad:#f08079;--bad-bg:#3a1a18;--amber:#f0b04a;--amber-bg:#3a2b12;--crm:#6fa3e8;--silos:#e0a85a;--ent:#5cc983;color-scheme:dark}}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:880px;margin:0 auto;padding-block:40px 48px;display:flex;flex-direction:column;gap:26px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.mk{width:44px;height:44px;border-radius:9px;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:19px}
+.brand b{font-family:var(--f-display);font-size:1.45rem;display:block;line-height:1.05}
+.brand span{font-size:.78rem;color:var(--fg-3);text-transform:uppercase;letter-spacing:.09em}
+.who{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--fg-2)}
+.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:4px;font-weight:600;text-decoration:underline}
+h1{font-family:var(--f-display);font-size:1.7rem;margin:0;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--fg-2)}
+.apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.app{position:relative;display:flex;flex-direction:column;gap:12px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 18px 18px;cursor:pointer;min-width:0;transition:border-color .15s,transform .15s}
+.app:hover:not([disabled]){border-color:var(--c);transform:translateY(-2px)}
+.app:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.app[disabled]{cursor:not-allowed;opacity:.62}
+.app .ic{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.app .ic svg{width:25px;height:25px}
+.app b{font-family:var(--f-display);font-size:1.25rem;line-height:1.1}
+.app p{margin:0;color:var(--fg-2);font-size:.9rem}
+.app .st{margin-top:auto;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;align-self:flex-start;background:var(--panel-2);color:var(--fg-2)}
+.st.ok{background:var(--good-bg);color:var(--good)} .st.no{background:var(--bad-bg);color:var(--bad)} .st.soon{background:var(--amber-bg);color:var(--amber)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(420px,100%);margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.card .top{display:flex;align-items:center;gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:.82rem;font-weight:600;color:var(--fg-2)}
+.fld input{padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);width:100%}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn[disabled]{opacity:.6;cursor:wait}
+.note{border-radius:8px;padding:10px 12px;font-size:.88rem;background:var(--amber-bg)}
+.note.bad{background:var(--bad-bg)}
+.foot{font-size:.8rem;color:var(--fg-3);text-align:center}
+@media (max-width:700px){.apps{grid-template-columns:1fr}.wrap{padding-block:24px 32px}.app{flex-direction:row;align-items:center;flex-wrap:wrap}.app .tx{flex:1;min-width:0}.app .st{margin-top:0}}
+@media (prefers-reduced-motion:reduce){.app{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="mk">TX</div><div><b>Apps Grupo TX</b><span>Portal de aplicaciones</span></div></div>
+    <div class="who" id="who" hidden></div>
+  </header>
+
+  <section id="pick">
+    <h1>¿Qué aplicación quieres abrir?</h1>
+    <p class="lead">Usa el mismo correo y contraseña en todas. Cada aplicación muestra solo lo que tu perfil tiene permitido.</p>
+    <div class="apps" id="apps" style="margin-top:18px"></div>
+  </section>
+
+  <section id="login" hidden>
+    <form class="card" id="loginForm">
+      <div class="top"><div class="ic" id="lgIc"></div><div><div class="foot" style="text-align:left">Ingresar a</div><h1 id="lgTitle" style="font-size:1.4rem"></h1></div></div>
+      <div id="lgMsg"></div>
+      <div class="fld"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="fld"><label for="pass">Contraseña</label><input id="pass" type="password" autocomplete="current-password" required></div>
+      <button class="btn pri" type="submit" id="lgBtn">Ingresar</button>
+      <button class="btn" type="button" id="back">Elegir otra aplicación</button>
+      <p class="foot" style="text-align:left;margin:0">¿Olvidaste tu contraseña o no tienes cuenta? Pídela al administrador de la aplicación.</p>
+    </form>
+  </section>
+
+  <p class="foot">Grupo TX · Morteros · Adhesivos · Cemento · Pinturas</p>
+</div>
+
+<script>
+const SB_URL='https://xinnonzltoaoptnvkhhy.supabase.co';
+const SB_KEY='sb_publishable_DoSRSj0wmAR_UIX8tENXXQ_X5BS5a1q';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const base=location.origin;
+const IC={
+ crm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/></svg>',
+ silos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v12l-2 3h-4l-2-3z"/><path d="M8 7h8M10 18v3M14 18v3M6 21h12"/></svg>',
+ ent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg>'};
+const APPS=[
+ {id:'crm',name:'CRM Comercial',desc:'Clientes, visitas con GPS, cotizaciones y pipeline de ventas.',url:base+'/apps-tx/crm.html',color:'var(--crm)',
+  check:async uid=>{const {data}=await sb.from('crm_profiles').select('active').eq('id',uid).maybeSingle();return !!(data&&data.active)}},
+ {id:'silos',name:'Silos TX 360',desc:'Solicitud, instalación, fallas, mantenciones y retiro de silos en obra.',url:base+'/silos-tx/',color:'var(--silos)',
+  check:async uid=>{const {data}=await sb.from('profiles').select('rol,activo').eq('id',uid).maybeSingle();return !!(data&&data.activo&&data.rol!=='pendiente')}},
+ {id:'ent',name:'Entregas TX',desc:'Guías asignadas, llegada con GPS, fotos, firma de recepción y devoluciones.',url:base+'/entregas-tx/',color:'var(--ent)',
+  check:async uid=>{const {data}=await sb.from('ent_usuarios').select('rol,activo').eq('id',uid).maybeSingle();return !!(data&&data.activo&&data.rol!=='pendiente')}}];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let session=null,access={},online={},chosen=null;
+
+async function probe(app){
+ if(location.hostname==='localhost'||location.protocol==='file:'){online[app.id]=true;return}
+ try{const r=await fetch(app.url,{method:'HEAD',cache:'no-store'});online[app.id]=r.ok}catch(e){online[app.id]=false}
+}
+function render(){
+ $('#apps').innerHTML=APPS.map(a=>{
+  const up=online[a.id]!==false;let st='',cls='';
+  if(!up){st='En preparación';cls='soon'}
+  else if(session){if(access[a.id]===true){st='Entrar';cls='ok'}else if(access[a.id]===false){st='Sin acceso';cls='no'}else st='Verificando…'}
+  else st='Ingresar';
+  return `<button class="app" data-app="${a.id}" style="--c:${a.color}" ${!up?'disabled':''}><span class="ic">${IC[a.id]}</span><span class="tx"><b>${esc(a.name)}</b><p>${esc(a.desc)}</p></span><span class="st ${cls}">${st}</span></button>`}).join('');
+ const w=$('#who');
+ if(session){w.innerHTML=`<span>${esc(session.user.email)}</span><button class="link" id="out">Cerrar sesión</button>`;w.hidden=false;$('#out').onclick=async()=>{await sb.auth.signOut();session=null;access={};render()}}
+ else w.hidden=true;
+}
+async function checkAll(){if(!session)return;await Promise.all(APPS.map(async a=>{try{access[a.id]=await a.check(session.user.id)}catch(e){access[a.id]=false}}));render()}
+function showLogin(app,msg){
+ chosen=app;$('#pick').hidden=true;$('#login').hidden=false;
+ $('#lgTitle').textContent=app.name;$('#lgIc').outerHTML=`<div class="ic" id="lgIc" style="width:46px;height:46px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,${app.color} 14%,transparent);color:${app.color}">${IC[app.id].replace('<svg','<svg width="25" height="25"')}</div>`;
+ $('#lgMsg').innerHTML=msg?`<div class="note bad">${msg}</div>`:'';
+ setTimeout(()=>$('#email').focus(),30);
+}
+function showPick(){$('#login').hidden=true;$('#pick').hidden=false;render()}
+async function open(app){
+ if(!session){showLogin(app);return}
+ if(access[app.id]===undefined)access[app.id]=await app.check(session.user.id).catch(()=>false);
+ if(access[app.id]){location.href=app.url;return}
+ render();
+ showLogin(app,`Tu cuenta <b>${esc(session.user.email)}</b> no tiene acceso a ${esc(app.name)}. Pídeselo a su administrador, o ingresa con otra cuenta.`);
+}
+$('#apps').addEventListener('click',e=>{const b=e.target.closest('[data-app]');if(b&&!b.disabled)open(APPS.find(a=>a.id===b.dataset.app))});
+$('#back').onclick=showPick;
+$('#loginForm').onsubmit=async e=>{e.preventDefault();const b=$('#lgBtn');b.disabled=true;b.textContent='Ingresando…';
+ const {data,error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#pass').value});
+ if(error){b.disabled=false;b.textContent='Ingresar';$('#lgMsg').innerHTML=`<div class="note bad">${/invalid/i.test(error.message)?'Correo o contraseña incorrectos.':esc(error.message)}</div>`;return}
+ session=data.session;access={};
+ const ok=await chosen.check(session.user.id).catch(()=>false);access[chosen.id]=ok;
+ if(ok){location.href=chosen.url;return}
+ b.disabled=false;b.textContent='Ingresar';checkAll();
+ $('#lgMsg').innerHTML=`<div class="note bad">Ingresaste como <b>${esc(session.user.email)}</b>, pero tu cuenta no tiene acceso a ${esc(chosen.name)}. Pídeselo a su administrador.</div>`;
+};
+(async()=>{
+ render();
+ const r=await sb.auth.getSession();session=r.data.session;
+ await Promise.all(APPS.map(probe));render();
+ if(session)checkAll();
+})();
+</script>
+</body>
+</html>
