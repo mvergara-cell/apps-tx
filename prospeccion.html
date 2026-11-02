@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D1D1B">
+<title>Prospección Grupo TX</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg fill='none' stroke='%23E4032E' stroke-width='2.4'%3E%3Crect x='1.2' y='1.2' width='7.6' height='7.6'/%3E%3Crect x='11.2' y='1.2' width='7.6' height='7.6'/%3E%3Crect x='1.2' y='11.2' width='7.6' height='7.6'/%3E%3Crect x='11.2' y='11.2' width='7.6' height='7.6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --brand:#E4032E; --brand-ink:#FFFFFF; --black:#1D1D1B;
+  --bg:#F1F2F3; --surface:#FFFFFF; --sunk:#F6F7F8; --ink:#1D1D1B; --muted:#5F6368; --line:#DADCDF;
+  --ok:#1E8E4E; --warn:#D48A00; --old:#7A1020; --pro:#014999;
+  color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#111213; --surface:#1B1C1E; --sunk:#151618; --ink:#ECEDEE; --muted:#A1A5AA; --line:#2E3034;
+    --ok:#4CC27F; --warn:#F0AE3C; --old:#E57B8A; --pro:#79A9E6; color-scheme:dark;}
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--pro)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+/* Barra de marca */
+header.bar{background:var(--black);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:4px solid var(--brand)}
+.logo{height:44px;width:auto;display:block;flex:none}
+.appname{border-left:2px solid var(--brand);padding-left:12px;line-height:1.15}
+.appname b{display:block;font-size:16px;font-weight:800}
+.appname span{font-size:12px;color:#B9BBBE}
+.bar .spacer{flex:1}
+.seg{display:flex;border:1px solid #4A4B4D;border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:#D6D7D8;border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.iconbtn{border:1px solid #4A4B4D;background:transparent;color:#fff;border-radius:999px;width:40px;height:40px;cursor:pointer;display:grid;place-items:center;flex:none}
+.iconbtn svg{width:20px;height:20px}
+@media (max-width:560px){.appname{display:none}.logo{height:38px}}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;cursor:pointer;min-height:42px;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--black);color:#fff;border-color:var(--black)}
+@media (prefers-color-scheme:dark){.btn[aria-pressed="true"]{background:#fff;color:var(--black);border-color:#fff}}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{min-height:34px;padding:4px 12px;font-size:13px}
+
+main{flex:1;display:grid;grid-template-columns:1fr;min-height:0}
+@media (min-width:1000px){
+  main{grid-template-columns:minmax(0,1.2fr) minmax(400px,.8fr)}
+  .left{display:flex;flex-direction:column;min-height:0}
+  .mapwrap{flex:1;min-height:0}
+  #map{height:100%!important}
+  .right{overflow:auto;border-left:1px solid var(--line)}
+}
+.search{padding:14px 16px 12px;background:var(--surface);display:grid;gap:10px;border-bottom:1px solid var(--line)}
+.search label{font-weight:700;font-size:14px}
+.search input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;background:var(--sunk)}
+.search input:focus{border-color:var(--brand);outline:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+.mapwrap{position:relative}
+#map{height:56vh;min-height:340px;background:var(--sunk)}
+.tools{position:absolute;z-index:5;left:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.tools .btn{min-height:38px;padding:6px 12px;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.2);text-align:left;display:flex;align-items:center;gap:8px}
+.tools .btn svg{width:16px;height:16px;flex:none}
+.hint{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:24px;background:var(--black);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;max-width:90%;text-align:center;border-left:4px solid var(--brand)}
+.hint:empty{display:none}
+@media (max-width:560px){.tools{flex-direction:row;flex-wrap:wrap;right:56px}.tools .btn{min-height:34px;padding:5px 9px;font-size:12px;gap:5px}.tools .btn svg{width:13px;height:13px}}
+#btnClosePoly{position:absolute;z-index:5;right:10px;bottom:70px}
+
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--line)}
+.actions .near{display:flex;gap:6px}
+.actions select{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--sunk);min-height:42px}
+#btnSearch{flex:1 1 200px}
+#status{font-size:13px;color:var(--muted);flex-basis:100%}
+#status:empty{display:none}
+
+.res-head{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;display:grid;gap:10px;border-bottom:1px solid var(--line)}
+.res-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.res-title h2{margin:0;font-size:19px;font-weight:800}
+.res-tools{display:flex;gap:6px}
+#list{padding:12px 16px 48px;display:grid;gap:10px}
+.empty{display:grid;justify-items:start;gap:12px;color:var(--muted);padding:28px 4px;max-width:44ch}
+.empty strong{color:var(--ink);font-size:16px}
+.squares{display:grid;grid-template-columns:repeat(2,18px);gap:5px}
+.squares i{width:18px;height:18px;border:4px solid var(--brand)}
+.loading .squares i{animation:pulse 1.2s infinite}
+.loading .squares i:nth-child(2){animation-delay:.15s}.loading .squares i:nth-child(4){animation-delay:.3s}.loading .squares i:nth-child(3){animation-delay:.45s}
+@keyframes pulse{50%{opacity:.2}}
+
+.card{display:grid;grid-template-columns:118px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--pro)}
+.card.activo::before{background:var(--ok)} .card.perdido::before{background:var(--warn)} .card.antiguo::before{background:var(--old)}
+.thumb{width:118px;height:92px;border-radius:8px;background:var(--sunk);object-fit:cover;display:block;margin-left:4px}
+.thumb.facade{cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--ink)}
+.thumb.facade span{border-bottom:2px solid var(--brand)}
+img.thumb{cursor:zoom-in}
+.thumb.ph{display:grid;place-items:center;font-size:12px;color:var(--muted);text-align:center;padding:6px;text-decoration:none;border:1px dashed var(--line)}
+.card h3{margin:0 0 3px;font-size:15px;line-height:1.25;font-weight:700}
+.meta{font-size:13px;color:var(--muted)}
+.dist{font-weight:700;color:var(--ink)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin:6px 0 2px;color:var(--pro)}
+.badge::before{content:"";width:9px;height:9px;border-radius:2px;background:currentColor}
+.badge.activo{color:var(--ok)} .badge.perdido{color:var(--warn)} .badge.antiguo{color:var(--old)}
+.links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-left:4px}
+.links a,.links button{font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;background:var(--sunk);color:var(--ink);cursor:pointer}
+.links a.call{background:var(--ok);color:#fff;border-color:var(--ok)}
+.links a.mail{background:var(--pro);color:#fff;border-color:var(--pro)}
+
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;font-size:13px;min-width:1100px;width:100%}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--black);color:#fff;font-weight:600;position:sticky;top:0}
+
+/* Pantalla de conexión */
+#setup{position:fixed;inset:0;z-index:50;background:var(--black);color:#fff;display:grid;place-items:center;padding:24px}
+#setup[hidden]{display:none}
+.setup-card{max-width:440px;display:grid;gap:16px}
+.setup-card .logo{height:72px}
+.setup-card h1{margin:8px 0 0;font-size:24px;font-weight:800}
+.setup-card p{margin:0;color:#C4C6C9;font-size:14px}
+.setup-card input{border:1.5px solid #4A4B4D;background:#2A2B2D;color:#fff;border-radius:10px;padding:12px 14px;width:100%}
+.setup-card .err{color:#FF8A9C;font-size:13px}
+
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;width:min(640px,94vw);max-height:90vh}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg{padding:0 0 18px;display:grid;gap:18px}
+.dlg-top{background:var(--black);color:#fff;padding:14px 20px;border-bottom:4px solid var(--brand)}
+.dlg-top h2{margin:0;font-size:18px}
+.dlg>fieldset,.dlg>.dlg-foot{margin:0 20px}
+fieldset{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:10px}
+legend{font-weight:700;padding:0 6px}
+.field{display:grid;gap:4px}
+.field input,.field select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--sunk);min-height:42px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{font-size:13px;color:var(--muted);margin:0}
+#mapping{display:grid;gap:8px}
+#mapping .field{grid-template-columns:150px 1fr;align-items:center}
+.dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.gm-style .gm-style-iw{font:13px/1.4 Montserrat,system-ui,sans-serif;color:#1D1D1B}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <svg class="logo" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Grupo TX, construyendo futuro" data-name="Capa 1" viewBox="0 0 1181.46 715.12"><g><g><path d="M36.39,34.79h35.41v30.74c-3.77,4.13-8.31,7.35-13.63,9.67-5.32,2.32-10.99,3.48-17,3.48-12.02,0-21.89-3.62-29.6-10.86C3.86,60.57,0,51.09,0,39.36c0-11.08,3.67-20.4,11.02-27.97C18.37,3.82,27.81.04,39.32.04c6.52,0,12.6,1.25,18.25,3.75,5.65,2.5,9.81,5.81,12.49,9.94l-11.62,10.43c-4.63-5.21-10.79-7.82-18.46-7.82-6.95,0-12.44,2.04-16.46,6.14-4.02,4.09-6.03,9.72-6.03,16.89s2.19,12.89,6.57,16.94c4.38,4.05,10.12,6.08,17.22,6.08,5.58,0,10.35-1.45,14.34-4.34v-8.04h-19.23v-15.21Z" fill="#FFFFFF" stroke-width="0"></path><path d="M586.76,44.59c0,4.75-.63,9.06-1.89,12.92-1.26,3.86-2.93,7.09-5.01,9.69-2.08,2.6-4.55,4.79-7.4,6.57-2.86,1.78-5.85,3.06-8.96,3.84-3.12.78-6.38,1.17-9.8,1.17-9.87,0-18.15-3.04-24.83-9.13-6.68-6.09-10.02-14.66-10.02-25.72V.05h17.26v41.87c0,6.31,1.52,11.34,4.56,15.09,3.04,3.75,7.39,5.62,13.03,5.62,10.54,0,15.81-6.76,15.81-20.27V.05h17.26v44.54Z" fill="#FFFFFF" stroke-width="0"></path><path d="M778.01,78.5V.21h32.43c6.34,0,11.78.78,16.33,2.35,4.55,1.57,8,3.69,10.35,6.37,2.35,2.68,4.03,5.52,5.03,8.5,1.01,2.98,1.51,6.23,1.51,9.73,0,7.46-2.68,13.78-8.05,18.96-5.37,5.18-13.76,7.77-25.16,7.77h-15.1v24.61h-17.34ZM795.34,16.43v21.25h14.88c10.29,0,15.43-3.54,15.43-10.63s-4.92-10.63-14.76-10.63h-15.55Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1041.89,11.44c7.57-7.6,16.85-11.41,27.86-11.41s20.18,3.75,27.75,11.24c7.57,7.49,11.35,16.85,11.35,28.08s-3.78,20.49-11.35,28.02c-7.57,7.53-16.82,11.3-27.75,11.3s-20.2-3.75-27.81-11.24c-7.6-7.49-11.4-16.85-11.4-28.08s3.78-20.31,11.35-27.91ZM1054.38,55.97c4.24,4.27,9.36,6.41,15.37,6.41s11.3-2.12,15.42-6.35c4.13-4.24,6.19-9.79,6.19-16.67s-2.15-12.35-6.46-16.62c-4.31-4.27-9.36-6.41-15.15-6.41s-11.13,2.14-15.37,6.41c-4.24,4.27-6.35,9.81-6.35,16.62s2.12,12.35,6.35,16.62Z" fill="#FFFFFF" stroke-width="0"></path><path d="M259.83,78.38V0h31.69c5.97,0,11.1.71,15.4,2.13,4.29,1.42,7.58,3.38,9.85,5.88,2.28,2.5,3.92,5.17,4.93,8.01,1.01,2.84,1.51,6.01,1.51,9.52,0,5.08-1.38,9.7-4.14,13.88-2.76,4.18-6.49,7.2-11.2,9.07l21.83,29.9h-20.94l-19.15-26.76h-12.43v26.76h-17.35ZM277.18,16.23v19.15h14.67c4.25,0,7.54-.86,9.85-2.57,2.31-1.72,3.47-4.14,3.47-7.28s-1.03-5.38-3.08-6.94c-2.05-1.57-5.69-2.35-10.92-2.35h-14Z" fill="#FFFFFF" stroke-width="0"></path></g><g><g><path d="M.23,109.3v177.41h177.41V109.3H.23ZM126.95,236.02H50.92v-76.03h76.03v76.03ZM.23,312.05v177.41h177.41v-177.41H.23ZM126.95,438.78H50.92v-76.03h76.03v76.03ZM202.98,109.3v177.41h177.41V109.3h-177.41ZM329.7,236.02h-76.03v-76.03h76.03v76.03ZM202.98,312.05v177.41h177.41v-177.41h-177.41ZM329.7,438.78h-76.03v-76.03h76.03v76.03Z" fill="#e4032e" stroke-width="0"></path><g><polygon points="405.22 108.59 405.22 108.67 405.22 181.44 405.22 190.44 520.89 190.44 520.89 488.81 606.7 488.81 606.7 190.44 722.91 190.44 722.91 181.44 722.91 108.67 722.91 108.59 405.22 108.59" fill="#FFFFFF" stroke-width="0"></polygon><polygon points="731.4 488.81 841.74 488.81 921.4 375.87 1002.35 488.81 1108.73 488.81 975.08 299.76 1109.39 108.59 999.75 108.59 919.27 223.04 837.13 108.59 729.14 108.59 865.99 298.58 731.4 488.81" fill="#FFFFFF" stroke-width="0"></polygon></g></g><path d="M1135.63,443.2c5.24-5.17,11.61-7.75,19.1-7.75s13.63,2.6,18.87,7.81c5.24,5.2,7.86,11.44,7.86,18.7s-2.62,13.84-7.86,19.04c-5.24,5.2-11.53,7.81-18.87,7.81s-13.85-2.6-19.1-7.81c-5.24-5.2-7.87-11.55-7.87-19.04s2.62-13.59,7.87-18.76ZM1138.94,477.69c4.31,4.27,9.53,6.4,15.67,6.4s11.27-2.17,15.61-6.51c4.34-4.35,6.52-9.51,6.52-15.5s-2.17-11.25-6.52-15.56c-4.34-4.31-9.55-6.46-15.61-6.46s-11.27,2.15-15.61,6.46c-4.34,4.3-6.51,9.49-6.51,15.56s2.15,11.35,6.46,15.61ZM1143.94,477.57v-31.79h10c8.16,0,12.24,3.22,12.24,9.66,0,2.17-.64,4.06-1.91,5.67s-2.96,2.75-5.06,3.43l9.21,13.03h-6.29l-8.09-11.68h-4.83v11.68h-5.28ZM1158.77,451.45c-1.12-.86-2.81-1.29-5.06-1.29h-4.49v11.23h4.94c1.57,0,3.02-.49,4.33-1.46,1.31-.97,1.97-2.28,1.97-3.93,0-2.17-.56-3.69-1.69-4.55Z" fill="#FFFFFF" stroke-width="0"></path></g></g><g><path d="M4.21,666.74c2.67-4.83,6.38-8.59,11.15-11.28,4.77-2.69,10.17-4.04,16.21-4.04,7.4,0,13.74,1.96,19.01,5.86,5.27,3.91,8.8,9.24,10.57,15.99h-16.7c-1.24-2.61-3.01-4.59-5.29-5.95-2.28-1.36-4.87-2.04-7.77-2.04-4.68,0-8.47,1.63-11.37,4.89-2.9,3.26-4.35,7.61-4.35,13.06s1.45,9.8,4.35,13.06c2.9,3.26,6.69,4.89,11.37,4.89,2.9,0,5.49-.68,7.77-2.04,2.28-1.36,4.04-3.35,5.29-5.95h16.7c-1.78,6.75-5.3,12.07-10.57,15.95-5.27,3.88-11.61,5.82-19.01,5.82-6.04,0-11.45-1.35-16.21-4.04-4.77-2.69-8.48-6.44-11.15-11.24s-4-10.28-4-16.44,1.33-11.65,4-16.48Z" fill="#FFFFFF" stroke-width="0"></path><path d="M83.85,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM111.93,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path><path d="M196.11,714.5h-15.19l-25.41-38.47v38.47h-15.19v-62.37h15.19l25.41,38.65v-38.65h15.19v62.37Z" fill="#FFFFFF" stroke-width="0"></path><path d="M217.43,712.9c-3.61-1.48-6.5-3.67-8.66-6.57-2.16-2.9-3.3-6.4-3.42-10.48h16.17c.24,2.31,1.04,4.07,2.4,5.29,1.36,1.21,3.14,1.82,5.33,1.82s4.03-.52,5.33-1.55c1.3-1.04,1.95-2.47,1.95-4.31,0-1.54-.52-2.81-1.55-3.82-1.04-1.01-2.31-1.83-3.82-2.49-1.51-.65-3.66-1.39-6.44-2.22-4.03-1.24-7.32-2.49-9.86-3.73-2.55-1.24-4.74-3.08-6.57-5.51-1.84-2.43-2.75-5.6-2.75-9.51,0-5.8,2.1-10.35,6.31-13.64,4.21-3.29,9.68-4.93,16.44-4.93s12.41,1.64,16.61,4.93c4.21,3.29,6.46,7.86,6.75,13.73h-16.44c-.12-2.01-.86-3.6-2.22-4.75-1.36-1.16-3.11-1.73-5.24-1.73-1.84,0-3.32.49-4.44,1.47-1.13.98-1.69,2.38-1.69,4.22,0,2.01.95,3.58,2.84,4.71,1.89,1.13,4.86,2.34,8.88,3.64,4.03,1.36,7.3,2.67,9.82,3.91,2.52,1.24,4.69,3.05,6.53,5.42,1.83,2.37,2.75,5.42,2.75,9.15s-.9,6.78-2.71,9.68c-1.81,2.9-4.43,5.21-7.86,6.93-3.44,1.72-7.49,2.58-12.17,2.58s-8.65-.74-12.26-2.22Z" fill="#FFFFFF" stroke-width="0"></path><path d="M306.63,652.13v12.17h-16.52v50.2h-15.19v-50.2h-16.53v-12.17h48.24Z" fill="#FFFFFF" stroke-width="0"></path><path d="M346.07,714.5l-12.97-23.54h-3.64v23.54h-15.19v-62.37h25.5c4.92,0,9.11.86,12.57,2.58s6.06,4.07,7.77,7.06c1.72,2.99,2.58,6.32,2.58,10,0,4.15-1.17,7.85-3.51,11.11-2.34,3.26-5.79,5.57-10.35,6.93l14.39,24.7h-17.15ZM329.46,680.2h9.42c2.78,0,4.87-.68,6.26-2.04,1.39-1.36,2.09-3.29,2.09-5.77s-.7-4.23-2.09-5.6c-1.39-1.36-3.48-2.04-6.26-2.04h-9.42v15.46Z" fill="#FFFFFF" stroke-width="0"></path><path d="M387.12,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M488.31,652.13l-21.59,41.76v20.61h-15.19v-20.61l-21.59-41.76h17.24l12.08,26.12,11.99-26.12h17.06Z" fill="#FFFFFF" stroke-width="0"></path><path d="M509.63,664.3v12.62h20.35v11.73h-20.35v13.68h23.01v12.17h-38.2v-62.37h38.2v12.17h-23.01Z" fill="#FFFFFF" stroke-width="0"></path><path d="M598.29,714.5h-15.19l-25.41-38.47v38.47h-15.19v-62.37h15.19l25.41,38.65v-38.65h15.19v62.37Z" fill="#FFFFFF" stroke-width="0"></path><path d="M649.91,656.04c4.92,2.61,8.72,6.26,11.42,10.97,2.69,4.71,4.04,10.14,4.04,16.3s-1.35,11.52-4.04,16.26c-2.7,4.74-6.52,8.41-11.46,11.02-4.95,2.61-10.68,3.91-17.19,3.91h-23.37v-62.37h23.37c6.57,0,12.32,1.3,17.24,3.91ZM645.12,696.64c3.2-3.14,4.8-7.58,4.8-13.33s-1.6-10.22-4.8-13.42c-3.2-3.2-7.67-4.8-13.42-4.8h-7.2v36.25h7.2c5.74,0,10.22-1.57,13.42-4.71Z" fill="#FFFFFF" stroke-width="0"></path><path d="M687.27,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM715.34,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path><path d="M803.16,652.13v12.17h-25.41v13.15h19.01v11.82h-19.01v25.23h-15.19v-62.37h40.6Z" fill="#FFFFFF" stroke-width="0"></path><path d="M826.09,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M918.66,652.13v12.17h-16.52v50.2h-15.19v-50.2h-16.53v-12.17h48.24Z" fill="#FFFFFF" stroke-width="0"></path><path d="M941.22,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1020.74,714.5l-12.97-23.54h-3.64v23.54h-15.19v-62.37h25.5c4.92,0,9.11.86,12.57,2.58s6.06,4.07,7.77,7.06c1.72,2.99,2.58,6.32,2.58,10,0,4.15-1.17,7.85-3.51,11.11-2.34,3.26-5.79,5.57-10.35,6.93l14.39,24.7h-17.15ZM1004.12,680.2h9.42c2.78,0,4.87-.68,6.26-2.04,1.39-1.36,2.09-3.29,2.09-5.77s-.7-4.23-2.09-5.6c-1.39-1.36-3.48-2.04-6.26-2.04h-9.42v15.46Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1060.23,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM1088.3,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path></g></svg>
+  <div class="appname"><b>Prospección en terreno</b><span>Clientes y prospectos en el mapa</span></div>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="País">
+    <button data-country="cl" aria-pressed="true">Chile</button>
+    <button data-country="pe" aria-pressed="false">Perú</button>
+  </div>
+  <button class="iconbtn" id="btnSettings" aria-label="Ajustes y base de clientes" title="Ajustes y base de clientes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main>
+  <div class="left">
+    <div class="search">
+      <label for="q">¿Qué rubro buscas?</label>
+      <input id="q" placeholder="Ej.: ferretería, constructora, depósito de materiales" autocomplete="off" enterkeyhint="search">
+      <div class="chips" id="presetChips"></div>
+    </div>
+    <div class="mapwrap">
+      <div id="map"></div>
+      <div class="tools" role="toolbar" aria-label="Marcar área">
+        <button class="btn" data-mode="rect" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="12" height="10"/></svg>Rectángulo</button>
+        <button class="btn" data-mode="circle" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/></svg>Círculo</button>
+        <button class="btn" data-mode="poly" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4l9-2 2 8-7 4-5-4z"/></svg>Polígono</button>
+        <button class="btn" id="btnView"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5V2h3M11 2h3v3M14 11v3h-3M5 14H2v-3"/></svg>Vista actual</button>
+        <button class="btn" id="btnClear"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>Borrar área</button>
+      </div>
+      <button class="btn primary" id="btnClosePoly" hidden>Cerrar polígono</button>
+      <div class="hint" id="hint" aria-live="polite"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnSearch">Buscar en el área</button>
+      <div class="near">
+        <button class="btn" id="btnNear">Radio desde mí</button>
+        <select id="nearR" aria-label="Radio">
+          <option value="1000">1 km</option><option value="2000" selected>2 km</option>
+          <option value="5000">5 km</option><option value="10000">10 km</option>
+        </select>
+      </div>
+      <button class="btn" id="btnLocate">Mi ubicación</button>
+      <div id="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <section class="right" aria-label="Resultados">
+    <div class="res-head">
+      <div class="res-title">
+        <h2 id="resTitle">Resultados</h2>
+        <div class="res-tools">
+          <button class="btn small" id="btnTable" aria-pressed="false">Tabla</button>
+          <button class="btn small" id="btnAllC" hidden>Cargar contactos</button>
+          <button class="btn small" id="btnExport" disabled>Exportar Excel</button>
+        </div>
+      </div>
+      <div class="chips" id="statusChips"></div>
+    </div>
+    <div id="list"></div>
+  </section>
+</main>
+
+<div id="setup" hidden>
+  <div class="setup-card">
+    <svg class="logo" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Grupo TX, construyendo futuro" data-name="Capa 1" viewBox="0 0 1181.46 715.12"><g><g><path d="M36.39,34.79h35.41v30.74c-3.77,4.13-8.31,7.35-13.63,9.67-5.32,2.32-10.99,3.48-17,3.48-12.02,0-21.89-3.62-29.6-10.86C3.86,60.57,0,51.09,0,39.36c0-11.08,3.67-20.4,11.02-27.97C18.37,3.82,27.81.04,39.32.04c6.52,0,12.6,1.25,18.25,3.75,5.65,2.5,9.81,5.81,12.49,9.94l-11.62,10.43c-4.63-5.21-10.79-7.82-18.46-7.82-6.95,0-12.44,2.04-16.46,6.14-4.02,4.09-6.03,9.72-6.03,16.89s2.19,12.89,6.57,16.94c4.38,4.05,10.12,6.08,17.22,6.08,5.58,0,10.35-1.45,14.34-4.34v-8.04h-19.23v-15.21Z" fill="#FFFFFF" stroke-width="0"></path><path d="M586.76,44.59c0,4.75-.63,9.06-1.89,12.92-1.26,3.86-2.93,7.09-5.01,9.69-2.08,2.6-4.55,4.79-7.4,6.57-2.86,1.78-5.85,3.06-8.96,3.84-3.12.78-6.38,1.17-9.8,1.17-9.87,0-18.15-3.04-24.83-9.13-6.68-6.09-10.02-14.66-10.02-25.72V.05h17.26v41.87c0,6.31,1.52,11.34,4.56,15.09,3.04,3.75,7.39,5.62,13.03,5.62,10.54,0,15.81-6.76,15.81-20.27V.05h17.26v44.54Z" fill="#FFFFFF" stroke-width="0"></path><path d="M778.01,78.5V.21h32.43c6.34,0,11.78.78,16.33,2.35,4.55,1.57,8,3.69,10.35,6.37,2.35,2.68,4.03,5.52,5.03,8.5,1.01,2.98,1.51,6.23,1.51,9.73,0,7.46-2.68,13.78-8.05,18.96-5.37,5.18-13.76,7.77-25.16,7.77h-15.1v24.61h-17.34ZM795.34,16.43v21.25h14.88c10.29,0,15.43-3.54,15.43-10.63s-4.92-10.63-14.76-10.63h-15.55Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1041.89,11.44c7.57-7.6,16.85-11.41,27.86-11.41s20.18,3.75,27.75,11.24c7.57,7.49,11.35,16.85,11.35,28.08s-3.78,20.49-11.35,28.02c-7.57,7.53-16.82,11.3-27.75,11.3s-20.2-3.75-27.81-11.24c-7.6-7.49-11.4-16.85-11.4-28.08s3.78-20.31,11.35-27.91ZM1054.38,55.97c4.24,4.27,9.36,6.41,15.37,6.41s11.3-2.12,15.42-6.35c4.13-4.24,6.19-9.79,6.19-16.67s-2.15-12.35-6.46-16.62c-4.31-4.27-9.36-6.41-15.15-6.41s-11.13,2.14-15.37,6.41c-4.24,4.27-6.35,9.81-6.35,16.62s2.12,12.35,6.35,16.62Z" fill="#FFFFFF" stroke-width="0"></path><path d="M259.83,78.38V0h31.69c5.97,0,11.1.71,15.4,2.13,4.29,1.42,7.58,3.38,9.85,5.88,2.28,2.5,3.92,5.17,4.93,8.01,1.01,2.84,1.51,6.01,1.51,9.52,0,5.08-1.38,9.7-4.14,13.88-2.76,4.18-6.49,7.2-11.2,9.07l21.83,29.9h-20.94l-19.15-26.76h-12.43v26.76h-17.35ZM277.18,16.23v19.15h14.67c4.25,0,7.54-.86,9.85-2.57,2.31-1.72,3.47-4.14,3.47-7.28s-1.03-5.38-3.08-6.94c-2.05-1.57-5.69-2.35-10.92-2.35h-14Z" fill="#FFFFFF" stroke-width="0"></path></g><g><g><path d="M.23,109.3v177.41h177.41V109.3H.23ZM126.95,236.02H50.92v-76.03h76.03v76.03ZM.23,312.05v177.41h177.41v-177.41H.23ZM126.95,438.78H50.92v-76.03h76.03v76.03ZM202.98,109.3v177.41h177.41V109.3h-177.41ZM329.7,236.02h-76.03v-76.03h76.03v76.03ZM202.98,312.05v177.41h177.41v-177.41h-177.41ZM329.7,438.78h-76.03v-76.03h76.03v76.03Z" fill="#e4032e" stroke-width="0"></path><g><polygon points="405.22 108.59 405.22 108.67 405.22 181.44 405.22 190.44 520.89 190.44 520.89 488.81 606.7 488.81 606.7 190.44 722.91 190.44 722.91 181.44 722.91 108.67 722.91 108.59 405.22 108.59" fill="#FFFFFF" stroke-width="0"></polygon><polygon points="731.4 488.81 841.74 488.81 921.4 375.87 1002.35 488.81 1108.73 488.81 975.08 299.76 1109.39 108.59 999.75 108.59 919.27 223.04 837.13 108.59 729.14 108.59 865.99 298.58 731.4 488.81" fill="#FFFFFF" stroke-width="0"></polygon></g></g><path d="M1135.63,443.2c5.24-5.17,11.61-7.75,19.1-7.75s13.63,2.6,18.87,7.81c5.24,5.2,7.86,11.44,7.86,18.7s-2.62,13.84-7.86,19.04c-5.24,5.2-11.53,7.81-18.87,7.81s-13.85-2.6-19.1-7.81c-5.24-5.2-7.87-11.55-7.87-19.04s2.62-13.59,7.87-18.76ZM1138.94,477.69c4.31,4.27,9.53,6.4,15.67,6.4s11.27-2.17,15.61-6.51c4.34-4.35,6.52-9.51,6.52-15.5s-2.17-11.25-6.52-15.56c-4.34-4.31-9.55-6.46-15.61-6.46s-11.27,2.15-15.61,6.46c-4.34,4.3-6.51,9.49-6.51,15.56s2.15,11.35,6.46,15.61ZM1143.94,477.57v-31.79h10c8.16,0,12.24,3.22,12.24,9.66,0,2.17-.64,4.06-1.91,5.67s-2.96,2.75-5.06,3.43l9.21,13.03h-6.29l-8.09-11.68h-4.83v11.68h-5.28ZM1158.77,451.45c-1.12-.86-2.81-1.29-5.06-1.29h-4.49v11.23h4.94c1.57,0,3.02-.49,4.33-1.46,1.31-.97,1.97-2.28,1.97-3.93,0-2.17-.56-3.69-1.69-4.55Z" fill="#FFFFFF" stroke-width="0"></path></g></g><g><path d="M4.21,666.74c2.67-4.83,6.38-8.59,11.15-11.28,4.77-2.69,10.17-4.04,16.21-4.04,7.4,0,13.74,1.96,19.01,5.86,5.27,3.91,8.8,9.24,10.57,15.99h-16.7c-1.24-2.61-3.01-4.59-5.29-5.95-2.28-1.36-4.87-2.04-7.77-2.04-4.68,0-8.47,1.63-11.37,4.89-2.9,3.26-4.35,7.61-4.35,13.06s1.45,9.8,4.35,13.06c2.9,3.26,6.69,4.89,11.37,4.89,2.9,0,5.49-.68,7.77-2.04,2.28-1.36,4.04-3.35,5.29-5.95h16.7c-1.78,6.75-5.3,12.07-10.57,15.95-5.27,3.88-11.61,5.82-19.01,5.82-6.04,0-11.45-1.35-16.21-4.04-4.77-2.69-8.48-6.44-11.15-11.24s-4-10.28-4-16.44,1.33-11.65,4-16.48Z" fill="#FFFFFF" stroke-width="0"></path><path d="M83.85,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM111.93,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path><path d="M196.11,714.5h-15.19l-25.41-38.47v38.47h-15.19v-62.37h15.19l25.41,38.65v-38.65h15.19v62.37Z" fill="#FFFFFF" stroke-width="0"></path><path d="M217.43,712.9c-3.61-1.48-6.5-3.67-8.66-6.57-2.16-2.9-3.3-6.4-3.42-10.48h16.17c.24,2.31,1.04,4.07,2.4,5.29,1.36,1.21,3.14,1.82,5.33,1.82s4.03-.52,5.33-1.55c1.3-1.04,1.95-2.47,1.95-4.31,0-1.54-.52-2.81-1.55-3.82-1.04-1.01-2.31-1.83-3.82-2.49-1.51-.65-3.66-1.39-6.44-2.22-4.03-1.24-7.32-2.49-9.86-3.73-2.55-1.24-4.74-3.08-6.57-5.51-1.84-2.43-2.75-5.6-2.75-9.51,0-5.8,2.1-10.35,6.31-13.64,4.21-3.29,9.68-4.93,16.44-4.93s12.41,1.64,16.61,4.93c4.21,3.29,6.46,7.86,6.75,13.73h-16.44c-.12-2.01-.86-3.6-2.22-4.75-1.36-1.16-3.11-1.73-5.24-1.73-1.84,0-3.32.49-4.44,1.47-1.13.98-1.69,2.38-1.69,4.22,0,2.01.95,3.58,2.84,4.71,1.89,1.13,4.86,2.34,8.88,3.64,4.03,1.36,7.3,2.67,9.82,3.91,2.52,1.24,4.69,3.05,6.53,5.42,1.83,2.37,2.75,5.42,2.75,9.15s-.9,6.78-2.71,9.68c-1.81,2.9-4.43,5.21-7.86,6.93-3.44,1.72-7.49,2.58-12.17,2.58s-8.65-.74-12.26-2.22Z" fill="#FFFFFF" stroke-width="0"></path><path d="M306.63,652.13v12.17h-16.52v50.2h-15.19v-50.2h-16.53v-12.17h48.24Z" fill="#FFFFFF" stroke-width="0"></path><path d="M346.07,714.5l-12.97-23.54h-3.64v23.54h-15.19v-62.37h25.5c4.92,0,9.11.86,12.57,2.58s6.06,4.07,7.77,7.06c1.72,2.99,2.58,6.32,2.58,10,0,4.15-1.17,7.85-3.51,11.11-2.34,3.26-5.79,5.57-10.35,6.93l14.39,24.7h-17.15ZM329.46,680.2h9.42c2.78,0,4.87-.68,6.26-2.04,1.39-1.36,2.09-3.29,2.09-5.77s-.7-4.23-2.09-5.6c-1.39-1.36-3.48-2.04-6.26-2.04h-9.42v15.46Z" fill="#FFFFFF" stroke-width="0"></path><path d="M387.12,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M488.31,652.13l-21.59,41.76v20.61h-15.19v-20.61l-21.59-41.76h17.24l12.08,26.12,11.99-26.12h17.06Z" fill="#FFFFFF" stroke-width="0"></path><path d="M509.63,664.3v12.62h20.35v11.73h-20.35v13.68h23.01v12.17h-38.2v-62.37h38.2v12.17h-23.01Z" fill="#FFFFFF" stroke-width="0"></path><path d="M598.29,714.5h-15.19l-25.41-38.47v38.47h-15.19v-62.37h15.19l25.41,38.65v-38.65h15.19v62.37Z" fill="#FFFFFF" stroke-width="0"></path><path d="M649.91,656.04c4.92,2.61,8.72,6.26,11.42,10.97,2.69,4.71,4.04,10.14,4.04,16.3s-1.35,11.52-4.04,16.26c-2.7,4.74-6.52,8.41-11.46,11.02-4.95,2.61-10.68,3.91-17.19,3.91h-23.37v-62.37h23.37c6.57,0,12.32,1.3,17.24,3.91ZM645.12,696.64c3.2-3.14,4.8-7.58,4.8-13.33s-1.6-10.22-4.8-13.42c-3.2-3.2-7.67-4.8-13.42-4.8h-7.2v36.25h7.2c5.74,0,10.22-1.57,13.42-4.71Z" fill="#FFFFFF" stroke-width="0"></path><path d="M687.27,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM715.34,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path><path d="M803.16,652.13v12.17h-25.41v13.15h19.01v11.82h-19.01v25.23h-15.19v-62.37h40.6Z" fill="#FFFFFF" stroke-width="0"></path><path d="M826.09,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M918.66,652.13v12.17h-16.52v50.2h-15.19v-50.2h-16.53v-12.17h48.24Z" fill="#FFFFFF" stroke-width="0"></path><path d="M941.22,652.13v37.31c0,3.73.92,6.6,2.75,8.62,1.83,2.01,4.53,3.02,8.08,3.02s6.28-1.01,8.17-3.02c1.89-2.01,2.84-4.89,2.84-8.62v-37.31h15.19v37.23c0,5.57-1.19,10.28-3.55,14.13-2.37,3.85-5.55,6.75-9.55,8.71-4,1.95-8.46,2.93-13.37,2.93s-9.31-.96-13.19-2.89c-3.88-1.92-6.95-4.83-9.2-8.71-2.25-3.88-3.38-8.6-3.38-14.17v-37.23h15.19Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1020.74,714.5l-12.97-23.54h-3.64v23.54h-15.19v-62.37h25.5c4.92,0,9.11.86,12.57,2.58s6.06,4.07,7.77,7.06c1.72,2.99,2.58,6.32,2.58,10,0,4.15-1.17,7.85-3.51,11.11-2.34,3.26-5.79,5.57-10.35,6.93l14.39,24.7h-17.15ZM1004.12,680.2h9.42c2.78,0,4.87-.68,6.26-2.04,1.39-1.36,2.09-3.29,2.09-5.77s-.7-4.23-2.09-5.6c-1.39-1.36-3.48-2.04-6.26-2.04h-9.42v15.46Z" fill="#FFFFFF" stroke-width="0"></path><path d="M1060.23,711.03c-4.89-2.72-8.77-6.53-11.64-11.42-2.87-4.89-4.31-10.38-4.31-16.48s1.44-11.58,4.31-16.44c2.87-4.86,6.75-8.65,11.64-11.37,4.89-2.72,10.26-4.09,16.12-4.09s11.24,1.36,16.12,4.09c4.89,2.73,8.74,6.52,11.55,11.37,2.81,4.86,4.22,10.34,4.22,16.44s-1.42,11.59-4.26,16.48c-2.84,4.89-6.69,8.69-11.55,11.42-4.86,2.72-10.22,4.09-16.08,4.09s-11.24-1.36-16.12-4.09ZM1088.3,696.28c2.99-3.32,4.49-7.7,4.49-13.15s-1.5-9.91-4.49-13.19c-2.99-3.29-6.97-4.93-11.95-4.93s-9.05,1.63-12.04,4.89c-2.99,3.26-4.49,7.67-4.49,13.24s1.5,9.91,4.49,13.19c2.99,3.29,7,4.93,12.04,4.93s8.96-1.66,11.95-4.98Z" fill="#FFFFFF" stroke-width="0"></path></g></svg>
+    <h1>Conecta Google Maps</h1>
+    <p>La aplicación usa Google Maps para el mapa, los locales, teléfonos, sitios web y la foto de la fachada. Pega la API key de Google Cloud de la empresa. Se pide una sola vez en este dispositivo.</p>
+    <input id="setupKey" type="password" placeholder="AIza..." autocomplete="off">
+    <div class="err" id="setupErr"></div>
+    <button class="btn primary" id="setupSave">Conectar</button>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg">
+    <div class="dlg-top"><h2>Ajustes y base de clientes</h2></div>
+    <fieldset>
+      <legend>Estado de clientes</legend>
+      <div class="row2">
+        <div class="field"><label for="actM">Activo hasta (meses)</label><input id="actM" type="number" min="1" step="1"></div>
+        <div class="field"><label for="lostM">Perdido hasta (meses)</label><input id="lostM" type="number" min="1" step="1"></div>
+      </div>
+      <p class="note" id="ruleNote"></p>
+    </fieldset>
+    <fieldset>
+      <legend>Base de clientes</legend>
+      <p class="note" id="clientsInfo"></p>
+      <div class="field"><label for="fileClients">Cargar Excel o CSV</label><input id="fileClients" type="file" accept=".xlsx,.xls,.csv"></div>
+      <p class="note">Columnas útiles: nombre o razón social, fecha de última venta, teléfono, dirección, comuna o distrito, RUT o RUC, vendedor, y latitud/longitud si las tienes.</p>
+      <div id="mapping" hidden></div>
+      <div class="dlg-foot" style="justify-content:flex-start">
+        <button type="button" class="btn primary" id="btnSaveClients" hidden>Guardar base</button>
+        <button type="button" class="btn" id="btnDelClients">Borrar base</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Uso de Google en este dispositivo</legend>
+      <p class="note" id="usageInfo"></p>
+      <div class="row2">
+        <div class="field"><label for="limS">Consultas de búsqueda por día</label><input id="limS" type="number" min="0" step="1"></div>
+        <div class="field"><label for="limD">Contactos por día</label><input id="limD" type="number" min="0" step="1"></div>
+      </div>
+      <div class="field"><label for="limF">Fachadas por día</label><input id="limF" type="number" min="0" step="1"></div>
+      <p class="note">Son límites por vendedor (0 = sin límite). El tope real para toda la empresa se fija en Google Cloud.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Conexión con Google Maps</legend>
+      <p class="note" id="keyInfo"></p>
+      <div class="dlg-foot" style="justify-content:flex-start"><button type="button" class="btn" id="btnResetKey">Cambiar API key</button></div>
+    </fieldset>
+    <div class="dlg-foot"><button class="btn primary" value="close">Listo</button></div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+/* Si se deja la key aquí, los vendedores no tienen que ingresarla. Restríngela en Google Cloud al dominio donde se publique la app. */
+const GOOGLE_KEY="";
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const deacc=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+let settings=Object.assign({gkey:"",activeM:3,lostM:4,country:null},store.get("tx_settings",{}));
+settings.limits=Object.assign({search:20,details:40,facade:40},settings.limits||{});
+const saveSettings=()=>store.set("tx_settings",settings);
+const apiKey=()=>GOOGLE_KEY||settings.gkey;
+const status=m=>{$("#status").textContent=m||""};
+const hint=m=>{$("#hint").textContent=m||""};
+
+/* ---------- País ---------- */
+const COUNTRY={cl:{center:{lat:-33.45,lng:-70.66},label:"Chile"},pe:{center:{lat:-12.06,lng:-77.04},label:"Perú"}};
+let country=settings.country||"cl";
+function setCountry(c,pan){
+  country=c;document.querySelectorAll("[data-country]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.country===c));
+  renderPresets();
+  if(pan&&gmap){const inC=userPos&&countryOf(userPos)===c;gmap.setCenter(inC?userPos:COUNTRY[c].center);gmap.setZoom(inC?14:12)}
+}
+const countryOf=p=>p.lat>-18.35&&p.lng<-68.6?"pe":"cl";
+document.querySelectorAll("[data-country]").forEach(b=>b.onclick=()=>{settings.country=b.dataset.country;saveSettings();setCountry(b.dataset.country,true)});
+
+/* ---------- Rubros ---------- */
+const PRESETS=[
+ {label:"Ferreterías",g:{cl:"ferretería",pe:"ferretería"}},
+ {label:"Materiales de construcción",g:{cl:"venta de materiales de construcción",pe:"venta de materiales de construcción"}},
+ {label:"Barracas",cl:true,g:{cl:"barraca de materiales"}},
+ {label:"Depósitos de materiales",pe:true,g:{pe:"depósito de materiales de construcción"}},
+ {label:"Constructoras",g:{cl:"empresa constructora",pe:"empresa constructora"}},
+ {label:"Contratistas",g:{cl:"contratista construcción",pe:"contratista de obras"}},
+ {label:"Pinturerías",g:{cl:"pinturería",pe:"tienda de pinturas"}},
+ {label:"Cerámicas y pisos",g:{cl:"tienda de cerámicas y pisos",pe:"tienda de cerámicos y porcelanatos"}},
+ {label:"Arquitectos",g:{cl:"oficina de arquitectura",pe:"estudio de arquitectura"}}
+];
+let preset=null;
+function renderPresets(){
+  const box=$("#presetChips");box.innerHTML="";
+  PRESETS.filter(p=>!(p.cl&&country!=="cl")&&!(p.pe&&country!=="pe")).forEach(p=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=p.label;b.setAttribute("aria-pressed",preset===p);
+    b.onclick=()=>{preset=p;$("#q").value=p.label;box.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c===b))};
+    box.appendChild(b);
+  });
+  if(preset&&!preset.g[country]){preset=null;$("#q").value=""}
+}
+$("#q").addEventListener("input",()=>{preset=null;$("#presetChips").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false"))});
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter")$("#btnSearch").click()});
+function resolveQuery(){
+  const text=$("#q").value.trim();if(!text) return null;
+  if(preset&&preset.g[country]) return {label:preset.label,g:preset.g[country]};
+  return {label:text,g:text};
+}
+
+/* ---------- Google Maps ---------- */
+let gmap=null,Place=null,Marker=null,Rect=null,Circ=null,Poly=null,info=null;
+let loadP=null;
+function loadGoogle(key){
+  if(loadP) return loadP;
+  loadP=new Promise((res,rej)=>{
+    window.__gmReady=res;
+    window.gm_authFailure=()=>{store.set("tx_keyfail",true);showSetup("Google rechazó la API key. Revisa que esté bien copiada, que el dominio esté autorizado y que Maps JavaScript API, Places API (New) y Street View Static API estén activas.")};
+    const s=document.createElement("script");
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&language=es&loading=async&callback=__gmReady`;
+    s.onerror=()=>{loadP=null;rej(new Error("No se pudo cargar Google Maps. Revisa tu conexión a internet."))};
+    document.head.appendChild(s);
+  });
+  return loadP;
+}
+const MAP_STYLE=[
+ {featureType:"poi",stylers:[{visibility:"off"}]},{featureType:"transit",stylers:[{visibility:"off"}]},
+ {elementType:"geometry",stylers:[{saturation:-60}]},{featureType:"water",stylers:[{color:"#c9d3db"}]}
+];
+function showSetup(msg){
+  $("#setup").hidden=false;$("#setupErr").textContent=msg||"";$("#setupKey").value="";
+  if(GOOGLE_KEY&&msg) $("#setupErr").textContent=msg+" La key está fijada en el código de la app: avisa al administrador.";
+}
+$("#setupSave").onclick=()=>{const k=$("#setupKey").value.trim();if(!/^AIza[\w-]{30,}$/.test(k)){$("#setupErr").textContent="Esa no parece una API key de Google (empieza con AIza).";return}
+  settings.gkey=k;saveSettings();location.reload()};
+$("#btnResetKey").onclick=()=>{if(GOOGLE_KEY){alert("La key está fijada en el código de la app.");return}settings.gkey="";saveSettings();location.reload()};
+
+async function boot(){
+  renderPresets();render();
+  if(!apiKey()){showSetup();return}
+  try{
+    await loadGoogle(apiKey());
+    const maps=await google.maps.importLibrary("maps");
+    ({Place}=await google.maps.importLibrary("places"));
+    ({Marker}=await google.maps.importLibrary("marker"));
+    Rect=maps.Rectangle;Circ=maps.Circle;Poly=maps.Polygon;
+    gmap=new maps.Map($("#map"),{center:COUNTRY[country].center,zoom:12,clickableIcons:false,mapTypeControl:false,streetViewControl:false,fullscreenControl:false,gestureHandling:"greedy",styles:MAP_STYLE});
+    info=new maps.InfoWindow();
+    gmap.addListener("click",e=>onMapClick(e.latLng));
+    gmap.addListener("mousemove",e=>onMapMove(e.latLng));
+    locate(!settings.country);
+  }catch(e){showSetup(e.message)}
+}
+
+/* ---------- Ubicación ---------- */
+let userPos=null,userMarker=null;
+function locate(fly){
+  if(!navigator.geolocation){status("Este navegador no entrega tu ubicación; las distancias quedarán en blanco.");return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    userPos={lat:p.coords.latitude,lng:p.coords.longitude};
+    if(!settings.country) setCountry(countryOf(userPos),false);
+    if(gmap){
+      const icon={path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:"#1A73E8",fillOpacity:1,strokeColor:"#fff",strokeWeight:3};
+      if(!userMarker) userMarker=new Marker({map:gmap,position:userPos,icon,title:"Estás aquí",zIndex:999}); else userMarker.setPosition(userPos);
+      if(fly){gmap.setCenter(userPos);gmap.setZoom(14)}
+    }
+    if(results.length){results.forEach(setDist);render()}
+  },e=>status("No se pudo obtener tu ubicación ("+e.message+"). Las distancias quedarán en blanco hasta que la permitas."),{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+$("#btnLocate").onclick=()=>locate(true);
+
+/* ---------- Dibujo de área ---------- */
+const SH={strokeColor:"#E4032E",strokeWeight:3,strokeOpacity:1,fillColor:"#E4032E",fillOpacity:.08,clickable:false};
+const HINTS={rect:"Toca una esquina y luego la esquina opuesta.",circle:"Toca el centro y luego el borde del círculo.",poly:"Toca cada vértice del área y luego Cerrar polígono."};
+let mode=null,draft=null,tmp=null,shape=null,shapeObj=null;
+const LL=ll=>({lat:ll.lat(),lng:ll.lng()});
+const bOf=(a,b)=>({s:Math.min(a.lat,b.lat),n:Math.max(a.lat,b.lat),w:Math.min(a.lng,b.lng),e:Math.max(a.lng,b.lng)});
+const gb=b=>({north:b.n,south:b.s,east:b.e,west:b.w});
+function setMode(m){
+  mode=m;draft=null;if(tmp){tmp.setMap(null);tmp=null}
+  document.querySelectorAll("[data-mode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===m));
+  $("#btnClosePoly").hidden=m!=="poly";
+  if(gmap) gmap.setOptions({draggableCursor:m?"crosshair":null,disableDoubleClickZoom:!!m});
+  hint(m?HINTS[m]:"");
+}
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{if(!gmap)return;setMode(mode===b.dataset.mode?null:b.dataset.mode)});
+function onMapClick(g){
+  if(!mode) return;const ll=LL(g);
+  if(mode==="rect"){ if(!draft){draft={a:ll};tmp=new Rect(Object.assign({map:gmap,bounds:gb(bOf(ll,ll))},SH));hint("Ahora toca la esquina opuesta.")} else finish({type:"rect",b:bOf(draft.a,ll)}) }
+  else if(mode==="circle"){ if(!draft){draft={c:ll};tmp=new Circ(Object.assign({map:gmap,center:ll,radius:1},SH));hint("Ahora toca el borde del círculo.")} else finish({type:"circle",c:draft.c,r:hav(draft.c.lat,draft.c.lng,ll.lat,ll.lng)}) }
+  else if(mode==="poly"){ draft=draft||{pts:[]};draft.pts.push(ll); if(!tmp) tmp=new Poly(Object.assign({map:gmap,paths:draft.pts},SH)); else tmp.setPaths(draft.pts); hint(draft.pts.length+" puntos. Toca Cerrar polígono cuando termines.") }
+}
+function onMapMove(g){ if(!draft||!tmp) return;const ll=LL(g);
+  if(mode==="rect") tmp.setBounds(gb(bOf(draft.a,ll))); else if(mode==="circle") tmp.setRadius(hav(draft.c.lat,draft.c.lng,ll.lat,ll.lng)) }
+$("#btnClosePoly").onclick=()=>{ if(!draft||draft.pts.length<3){hint("Necesitas al menos 3 puntos.");return} finish({type:"poly",pts:draft.pts.slice()}) };
+function finish(sh){
+  setMode(null);if(shapeObj) shapeObj.setMap(null);shape=sh;
+  const o=Object.assign({map:gmap},SH);
+  shapeObj=sh.type==="rect"?new Rect(Object.assign(o,{bounds:gb(sh.b)})):sh.type==="circle"?new Circ(Object.assign(o,{center:sh.c,radius:sh.r})):new Poly(Object.assign(o,{paths:sh.pts}));
+  gmap.fitBounds(gb(bbox(sh)),40);
+  status("Área marcada"+(sh.type==="circle"?" (radio "+(sh.r/1000).toFixed(1)+" km)":"")+". Elige un rubro y toca Buscar en el área.");
+}
+$("#btnView").onclick=()=>{if(!gmap)return;const b=gmap.getBounds();finish({type:"rect",b:{s:b.getSouthWest().lat(),w:b.getSouthWest().lng(),n:b.getNorthEast().lat(),e:b.getNorthEast().lng()}})};
+$("#btnClear").onclick=()=>{setMode(null);if(shapeObj)shapeObj.setMap(null);shapeObj=null;shape=null;status("")};
+$("#btnNear").onclick=()=>{ if(!gmap)return; if(!userPos){status("Activa tu ubicación primero (botón Mi ubicación).");locate(true);return} finish({type:"circle",c:userPos,r:+$("#nearR").value}) };
+
+/* ---------- Geometría ---------- */
+function hav(a,b,c,d){const R=6371000,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r;const h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function bbox(sh){
+  if(sh.type==="rect") return sh.b;
+  if(sh.type==="circle"){const dLat=sh.r/111320,dLng=sh.r/(111320*Math.cos(sh.c.lat*Math.PI/180));return{s:sh.c.lat-dLat,n:sh.c.lat+dLat,w:sh.c.lng-dLng,e:sh.c.lng+dLng}}
+  const la=sh.pts.map(p=>p.lat),ln=sh.pts.map(p=>p.lng);return{s:Math.min(...la),n:Math.max(...la),w:Math.min(...ln),e:Math.max(...ln)};
+}
+function inside(sh,lat,lng){
+  if(lat==null||lng==null) return false;
+  if(sh.type==="rect") return lat>=sh.b.s&&lat<=sh.b.n&&lng>=sh.b.w&&lng<=sh.b.e;
+  if(sh.type==="circle") return hav(sh.c.lat,sh.c.lng,lat,lng)<=sh.r;
+  let ins=false;const p=sh.pts;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i].lng,yi=p[i].lat,xj=p[j].lng,yj=p[j].lat;if(((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)) ins=!ins}return ins;
+}
+function setDist(it){it.dist=userPos?hav(userPos.lat,userPos.lng,it.lat,it.lng)/1000:null}
+function grid(b){
+  const mid=(b.s+b.n)/2,hKm=hav(b.s,b.w,b.n,b.w)/1000,wKm=hav(mid,b.w,mid,b.e)/1000;
+  let cell=2,nx,ny;do{nx=Math.max(1,Math.ceil(wKm/cell));ny=Math.max(1,Math.ceil(hKm/cell));cell*=1.4}while(nx*ny>12);
+  const cells=[],dy=(b.n-b.s)/ny,dx=(b.e-b.w)/nx;
+  for(let i=0;i<ny;i++)for(let j=0;j<nx;j++)cells.push({s:b.s+i*dy,n:b.s+(i+1)*dy,w:b.w+j*dx,e:b.w+(j+1)*dx});
+  return cells;
+}
+
+/* ---------- Búsqueda en Google Places ---------- */
+async function searchGoogle(p){
+  const fields=["id","displayName","formattedAddress","location","googleMapsURI","businessStatus","photos"];
+  const cells=grid(bbox(shape)),out=new Map();let n=0;
+  for(const c of cells){
+    if(cells.length>1) status(`Buscando ${p.label.toLowerCase()}: zona ${++n} de ${cells.length}…`);
+    const {places}=await Place.searchByText({textQuery:p.g,fields,locationRestriction:gb(c),maxResultCount:20,language:"es",region:country});
+    useAdd("search",1);
+    (places||[]).forEach(pl=>{ if(out.has(pl.id)||!pl.location) return;
+      out.set(pl.id,{id:pl.id,source:"Google Maps",name:pl.displayName||"",rubro:p.label,address:pl.formattedAddress||"",
+        phone:"",email:"",web:"",contact:"",lat:pl.location.lat(),lng:pl.location.lng(),gmaps:pl.googleMapsURI||"",
+        closed:pl.businessStatus&&pl.businessStatus!=="OPERATIONAL",_place:pl,details:false});
+    });
+  }
+  return [...out.values()];
+}
+
+/* ---------- Control de uso ---------- */
+const today=()=>new Date().toISOString().slice(0,10);
+function usage(){const u=store.get("tx_usage",{});const d=today(),m=d.slice(0,7);
+  if(u.day!==d){u.day=d;u.d={search:0,details:0,facade:0}} if(u.month!==m){u.month=m;u.m={search:0,details:0,facade:0}} return u}
+function useAdd(k,n){const u=usage();u.d[k]+=n;u.m[k]+=n;store.set("tx_usage",u)}
+function canUse(k,n){const lim=settings.limits[k];return !lim||usage().d[k]+n<=lim}
+const LIMIT_MSG={search:"búsquedas",details:"contactos",facade:"fachadas"};
+function limitMsg(k){return `Llegaste al límite diario de ${LIMIT_MSG[k]} en este dispositivo (${settings.limits[k]}). Se reinicia mañana; el administrador puede cambiarlo en Ajustes.`}
+
+async function loadDetails(list){
+  const todo=list.filter(it=>it._place&&!it.details);
+  if(!todo.length) return 0;
+  if(!canUse("details",todo.length)){status(limitMsg("details"));return 0}
+  let n=0;
+  for(const it of todo){
+    try{await it._place.fetchFields({fields:["nationalPhoneNumber","internationalPhoneNumber","websiteURI"]});
+      it.phone=it._place.nationalPhoneNumber||it._place.internationalPhoneNumber||"";it.web=it._place.websiteURI||"";it.details=true;n++;useAdd("details",1);
+      if(todo.length>1) status(`Cargando contactos: ${n} de ${todo.length}…`);
+    }catch(e){status("No se pudo cargar el contacto: "+(e.message||e));break}
+  }
+  rematch();return n;
+}
+function showFacade(btn,it){
+  if(!canUse("facade",1)){status(limitMsg("facade"));return}
+  useAdd("facade",1);
+  const srcs=[`https://maps.googleapis.com/maps/api/streetview?size=480x360&location=${it.lat},${it.lng}&fov=80&return_error_code=true&key=${encodeURIComponent(apiKey())}`];
+  try{const u=it._place?.photos?.[0]?.getURI({maxWidth:480});if(u)srcs.push(u)}catch(e){}
+  const img=document.createElement("img");img.className="thumb";img.alt="Fachada de "+it.name;
+  let i=0;img.onerror=()=>{i++;if(i<srcs.length)img.src=srcs[i];else{const a=document.createElement("a");a.className="thumb ph";a.href=svHref(it);a.target="_blank";a.rel="noopener";a.textContent="Sin foto. Abrir Street View";img.replaceWith(a)}};
+  img.onclick=()=>window.open(svHref(it),"_blank","noopener");
+  img.src=srcs[0];btn.replaceWith(img);it._facade=srcs;
+}
+
+/* ---------- Base de clientes ---------- */
+const STOP=new Set("spa ltda limitada sa sac saa srl eirl cia compania sociedad comercial comercializadora inversiones de del la las el los y e en".split(" "));
+const toks=s=>deacc(String(s||"").toLowerCase()).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t.length>1&&!STOP.has(t));
+const phoneN=s=>{const d=String(s||"").split(/[;,/]/)[0].replace(/\D/g,"");return d.length>=7?d.slice(-8):""};
+function sim(a,b){ if(!a.length||!b.length) return 0; const A=new Set(a),B=new Set(b);let i=0;A.forEach(t=>{if(B.has(t))i++});
+  let j=i/(A.size+B.size-i);const sa=a.join(""),sb=b.join("");if(Math.min(sa.length,sb.length)>=5&&(sa.includes(sb)||sb.includes(sa)))j=Math.max(j,.85);return j}
+function addrKey(s){const t=deacc(String(s||"").toLowerCase()).replace(/\b(avenida|av|calle|jiron|jr|pasaje|psje|pje)\b\.?/g," ");
+  const num=(t.match(/\d+/)||[""])[0];return{num,words:toks(t.replace(/\d+/g," "))}}
+let clients=[];
+function prepClients(raw){clients=raw.map(c=>Object.assign({},c,{_n:toks(c.name),_p:phoneN(c.phone),_a:addrKey(c.address)}))}
+prepClients(store.get("tx_clients",[]));
+function matchClient(it){
+  if(!clients.length) return null;
+  const n=toks(it.name),p=phoneN(it.phone),a=addrKey(it.address);let best=null,bs=0;
+  for(const c of clients){
+    let s=0;const ns=sim(n,c._n);
+    if(p&&c._p&&p===c._p) s=1;
+    if(ns>=.75) s=Math.max(s,ns);
+    if(c.lat!=null&&c.lng!=null&&hav(it.lat,it.lng,c.lat,c.lng)<200&&ns>=.4) s=Math.max(s,.8);
+    if(a.num&&c._a.num===a.num&&sim(a.words,c._a.words)>=.5&&ns>=.3) s=Math.max(s,.8);
+    if(s>bs){bs=s;best=c}
+  }
+  return bs>=.75?best:null;
+}
+function clientState(c){
+  if(!c) return {k:"prospecto",label:"Prospecto, sin ventas registradas",days:null};
+  if(!c.last) return {k:"activo",label:"Cliente (sin fecha de venta)",days:null};
+  const days=Math.floor((Date.now()-new Date(c.last))/864e5),m=days/30.44;
+  const ago=days<60?`hace ${days} días`:`hace ${Math.round(m)} meses`;
+  if(m<=settings.activeM) return {k:"activo",label:`Cliente activo, última venta ${ago}`,days};
+  if(m<=settings.lostM) return {k:"perdido",label:`Cliente perdido, última venta ${ago}`,days};
+  return {k:"antiguo",label:`Antiguo perdido, última venta ${ago}`,days};
+}
+function parseDate(v){
+  if(v==null||v==="") return null;
+  if(v instanceof Date) return isNaN(v)?null:v.toISOString();
+  if(typeof v==="number"&&v>20000&&v<80000) return new Date(Math.round((v-25569)*864e5)).toISOString();
+  const s=String(v).trim();let m;
+  if((m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) return new Date(+m[1],m[2]-1,+m[3]).toISOString();
+  if((m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))){let y=+m[3];if(y<100)y+=2000;return new Date(y,m[2]-1,+m[1]).toISOString()}
+  return null;
+}
+const FIELDS=[
+ {k:"name",label:"Nombre / razón social",rx:/raz[oó]n|nombre|cliente/i},
+ {k:"last",label:"Última venta",rx:/[uú]lt.*(venta|compra|fact)|fecha/i},
+ {k:"phone",label:"Teléfono",rx:/tel|fono|celular|m[oó]vil/i},
+ {k:"address",label:"Dirección",rx:/direcc|domicilio/i},
+ {k:"comuna",label:"Comuna / distrito",rx:/comuna|distrito|ciudad/i},
+ {k:"rut",label:"RUT / RUC",rx:/^ru[tc]\b|ru[tc]/i},
+ {k:"seller",label:"Vendedor",rx:/vendedor|ejecutivo|asesor/i},
+ {k:"lat",label:"Latitud",rx:/^lat/i},
+ {k:"lng",label:"Longitud",rx:/^(lng|lon)/i}
+];
+let pendingRows=null;
+$("#fileClients").onchange=async e=>{
+  const f=e.target.files[0];if(!f) return;
+  try{
+    const wb=XLSX.read(await f.arrayBuffer(),{type:"array",cellDates:true});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:"",raw:true});
+    if(!rows.length) throw new Error("la primera hoja está vacía");
+    pendingRows=rows;const heads=Object.keys(rows[0]);const box=$("#mapping");box.innerHTML="";const used=new Set();
+    FIELDS.forEach(fd=>{
+      const guess=heads.find(h=>!used.has(h)&&fd.rx.test(h))||"";if(guess)used.add(guess);
+      const d=document.createElement("div");d.className="field";
+      d.innerHTML=`<label for="map_${fd.k}">${fd.label}</label><select id="map_${fd.k}"><option value="">(no usar)</option>${heads.map(h=>`<option ${h===guess?"selected":""}>${esc(h)}</option>`).join("")}</select>`;
+      box.appendChild(d);
+    });
+    box.insertAdjacentHTML("afterbegin",`<p class="note">${rows.length} filas leídas. Revisa qué columna corresponde a cada dato:</p>`);
+    box.hidden=false;$("#btnSaveClients").hidden=false;
+  }catch(err){$("#clientsInfo").textContent="No se pudo leer el archivo: "+err.message+"."}
+};
+$("#btnSaveClients").onclick=()=>{
+  const m={};FIELDS.forEach(fd=>m[fd.k]=$("#map_"+fd.k).value);
+  if(!m.name&&!m.phone){$("#clientsInfo").textContent="Elige al menos la columna de nombre o de teléfono.";return}
+  const num=v=>{const x=parseFloat(String(v).replace(",","."));return isFinite(x)?x:null};
+  const raw=pendingRows.map(r=>({name:m.name?String(r[m.name]).trim():"",last:m.last?parseDate(r[m.last]):null,phone:m.phone?String(r[m.phone]):"",
+    address:[m.address?r[m.address]:"",m.comuna?r[m.comuna]:""].filter(Boolean).join(", "),rut:m.rut?String(r[m.rut]):"",
+    seller:m.seller?String(r[m.seller]):"",lat:m.lat?num(r[m.lat]):null,lng:m.lng?num(r[m.lng]):null})).filter(c=>c.name||c.phone);
+  if(!store.set("tx_clients",raw)){$("#clientsInfo").textContent="La base es demasiado grande para guardarse en este navegador.";return}
+  prepClients(raw);pendingRows=null;$("#mapping").hidden=true;$("#btnSaveClients").hidden=true;$("#fileClients").value="";
+  clientsInfo();if(results.length) rematch();
+};
+$("#btnDelClients").onclick=()=>{ if(!clients.length) return; if(!confirm("¿Borrar la base de clientes cargada en este dispositivo?")) return;
+  store.set("tx_clients",[]);prepClients([]);clientsInfo();if(results.length) rematch() };
+function clientsInfo(){
+  const n=clients.length,d=clients.filter(c=>c.last).length,g=clients.filter(c=>c.lat!=null).length,f=x=>x.toLocaleString("es-CL");
+  $("#clientsInfo").textContent=n?`${f(n)} clientes cargados: ${f(d)} con fecha de venta y ${f(g)} con coordenadas.`:"Aún no hay base cargada. Todos los resultados aparecerán como prospectos.";
+}
+
+/* ---------- Resultados ---------- */
+let results=[],filter="todos",tableView=false,markers=[];
+function rematch(){
+  results=results.filter(r=>r.source!=="Base de clientes");
+  results.forEach(it=>{it.client=matchClient(it);it.state=clientState(it.client)});
+  if(shape){const used=new Set(results.map(r=>r.client).filter(Boolean));
+    clients.forEach(c=>{ if(!used.has(c)&&inside(shape,c.lat,c.lng)){const it={id:"cli-"+c.name+c.lat,source:"Base de clientes",name:c.name,rubro:"Cliente en base",address:c.address,phone:c.phone,email:"",web:"",contact:"",lat:c.lat,lng:c.lng,photo:"",gmaps:`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`,client:c};it.state=clientState(c);setDist(it);results.push(it)}});
+  }
+  render();
+}
+$("#btnSearch").onclick=async()=>{
+  if(!gmap){showSetup();return}
+  if(!shape){status("Primero marca un área en el mapa.");return}
+  const p=resolveQuery();if(!p){status("Escribe un rubro o elige uno de la lista.");$("#q").focus();return}
+  const nCells=grid(bbox(shape)).length;
+  if(!canUse("search",nCells)){status(limitMsg("search"));return}
+  if(nCells>4&&!confirm(`Esta área es grande y usará ${nCells} consultas a Google. ¿Continuar? (Un área más chica gasta menos.)`)) return;
+  const btn=$("#btnSearch");btn.disabled=true;status("Buscando "+p.label.toLowerCase()+"…");
+  $("#list").innerHTML=`<div class="empty loading"><div class="squares"><i></i><i></i><i></i><i></i></div><strong>Buscando ${esc(p.label.toLowerCase())}…</strong></div>`;
+  try{
+    let items=(await searchGoogle(p)).filter(it=>inside(shape,it.lat,it.lng));
+    items.forEach(setDist);results=items;filter="todos";rematch();
+    status(items.length?`${items.length} lugares encontrados.`:"No hay resultados en esta área. Prueba con un área más grande u otro rubro.");
+  }catch(err){status("La búsqueda falló: "+(err.message||err)+". Si dice que la API no está habilitada, activa Places API (New) en Google Cloud.");render()}
+  finally{btn.disabled=false}
+};
+
+const COLORS={activo:"--ok",perdido:"--warn",antiguo:"--old",prospecto:"--pro"};
+const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const STATES=[["todos","Todos"],["prospecto","Prospectos"],["activo","Activos"],["perdido","Perdidos"],["antiguo","Antiguos perdidos"]];
+function filtered(){
+  const r=filter==="todos"?results:results.filter(x=>x.state.k===filter);
+  return r.slice().sort((a,b)=>(a.dist??1e9)-(b.dist??1e9)||a.name.localeCompare(b.name));
+}
+const telHref=p=>"tel:"+String(p).split(/[;,/]/)[0].replace(/[^\d+]/g,"");
+const webHref=w=>/^https?:\/\//i.test(w)?w:"https://"+w;
+const svHref=it=>`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${it.lat},${it.lng}`;
+const dirHref=it=>`https://www.google.com/maps/dir/?api=1&destination=${it.lat},${it.lng}`;
+const placeHref=it=>it.gmaps||`https://www.google.com/maps/search/?api=1&query=${it.lat},${it.lng}`;
+const fmtD=iso=>iso?new Date(iso).toLocaleDateString("es-CL"):"";
+const fmtDist=d=>d==null?"":d<1?Math.round(d*1000)+" m":d.toFixed(1)+" km";
+function render(){
+  const sc=$("#statusChips");
+  sc.innerHTML=results.length?STATES.map(([k,l])=>{const n=k==="todos"?results.length:results.filter(r=>r.state.k===k).length;return `<button class="chip" data-f="${k}" aria-pressed="${filter===k}">${l} (${n})</button>`}).join(""):"";
+  sc.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  const list=filtered();$("#btnExport").disabled=!list.length;
+  const pend=list.filter(it=>it._place&&!it.details).length;$("#btnAllC").hidden=!pend;$("#btnAllC").textContent=`Cargar contactos (${pend})`;
+  $("#resTitle").textContent=results.length?`${list.length} lugares`:"Resultados";
+  markers.forEach(m=>m.setMap(null));markers=[];
+  if(gmap) list.forEach(it=>{
+    const m=new Marker({map:gmap,position:{lat:it.lat,lng:it.lng},title:it.name,icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:cssv(COLORS[it.state.k]),fillOpacity:1,strokeColor:"#fff",strokeWeight:2}});
+    m.addListener("click",()=>{info.setContent(`<strong>${esc(it.name)}</strong><br>${esc(it.state.label)}${it.phone?`<br><a href="${telHref(it.phone)}">${esc(it.phone)}</a>`:""}<br><a href="${esc(dirHref(it))}" target="_blank" rel="noopener">Cómo llegar</a>`);info.open({map:gmap,anchor:m})});
+    it._m=m;markers.push(m);
+  });
+  const box=$("#list");
+  if(!results.length){box.innerHTML=`<div class="empty"><div class="squares"><i></i><i></i><i></i><i></i></div><strong>Marca un área en el mapa</strong><span>Usa rectángulo, círculo, polígono o radio desde tu ubicación. Luego elige un rubro y toca Buscar en el área.</span></div>`;return}
+  if(!list.length){box.innerHTML=`<div class="empty"><strong>Ningún lugar con este estado</strong><span>Elige otro filtro arriba.</span></div>`;return}
+  if(tableView){
+    box.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Correo</th><th>Sitio web</th><th>Contacto</th><th>Distancia</th><th>Estado</th><th>Última venta</th><th>Vendedor</th></tr></thead><tbody>${list.map((it,i)=>`<tr>
+      <td><a href="#" data-i="${i}" class="goto">${esc(it.name)}</a></td><td>${esc(it.address)}</td>
+      <td>${it.phone?`<a href="${telHref(it.phone)}">${esc(it.phone)}</a>`:""}</td><td>${it.email?`<a href="mailto:${esc(it.email)}">${esc(it.email)}</a>`:""}</td>
+      <td>${it.web?`<a href="${esc(webHref(it.web))}" target="_blank" rel="noopener">${esc(it.web.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,""))}</a>`:""}</td><td>${esc(it.contact)}</td>
+      <td>${fmtDist(it.dist)}</td><td>${esc(it.state.label)}</td><td>${fmtD(it.client?.last)}</td><td>${esc(it.client?.seller||"")}</td></tr>`).join("")}</tbody></table></div>`;
+  }else{
+    box.innerHTML=list.map((it,i)=>{return `<article class="card ${it.state.k}">
+      <button type="button" class="thumb ph facade" data-i="${i}"><span>Ver fachada</span></button>
+      <div><h3>${esc(it.name)}</h3>
+        <div class="meta">${it.dist!=null?`<span class="dist">${fmtDist(it.dist)}</span> de ti. `:""}${esc(it.address)}</div>
+        ${it.details&&!it.phone&&!it.web?`<div class="meta">Google no tiene teléfono ni sitio web de este lugar.</div>`:""}
+        ${it.contact?`<div class="meta">Contacto: ${esc(it.contact)}</div>`:""}
+        ${it.closed?`<div class="meta" style="color:var(--old);font-weight:600">Google lo marca como cerrado</div>`:""}
+        <span class="badge ${it.state.k}">${esc(it.state.label)}</span>
+        ${it.client&&it.client.name!==it.name?`<div class="meta">En la base como ${esc(it.client.name)}${it.client.seller?", vendedor "+esc(it.client.seller):""}</div>`:(it.client?.seller?`<div class="meta">Vendedor ${esc(it.client.seller)}</div>`:"")}
+      </div>
+      <div class="links">
+        ${it._place&&!it.details?`<button type="button" class="loadc" data-i="${i}">Ver teléfono y web</button>`:""}
+        ${it.phone?`<a class="call" href="${telHref(it.phone)}">Llamar ${esc(it.phone.split(/[;,/]/)[0])}</a>`:""}
+        ${it.email?`<a class="mail" href="mailto:${esc(it.email)}">Enviar correo</a>`:""}
+        ${it.web?`<a href="${esc(webHref(it.web))}" target="_blank" rel="noopener">Sitio web</a>`:""}
+        <a href="${esc(dirHref(it))}" target="_blank" rel="noopener">Cómo llegar</a>
+        <a href="${esc(placeHref(it))}" target="_blank" rel="noopener">Abrir en Google Maps</a>
+        <button type="button" class="goto" data-i="${i}">Ver en el mapa</button>
+      </div></article>`}).join("");
+    box.querySelectorAll(".facade").forEach(b=>{const it=list[+b.dataset.i];if(it._facade){const img=document.createElement("img");img.className="thumb";img.alt="Fachada de "+it.name;img.src=it._facade[0];img.onerror=()=>{if(it._facade[1]&&img.src!==it._facade[1])img.src=it._facade[1]};b.replaceWith(img)}else b.onclick=()=>showFacade(b,it)});
+    box.querySelectorAll(".loadc").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Cargando…";await loadDetails([list[+b.dataset.i]])});
+  }
+  box.querySelectorAll(".goto").forEach(b=>b.onclick=e=>{e.preventDefault();const it=list[+b.dataset.i];if(!gmap||!it._m)return;gmap.setCenter({lat:it.lat,lng:it.lng});gmap.setZoom(17);google.maps.event.trigger(it._m,"click");
+    if(innerWidth<1000) $("#map").scrollIntoView({behavior:"smooth",block:"center"})});
+}
+$("#btnAllC").onclick=async()=>{const l=filtered().filter(it=>it._place&&!it.details);
+  if(!confirm(`Se cargarán teléfono y web de ${l.length} lugares (${l.length} consultas a Google). ¿Continuar?`))return;
+  $("#btnAllC").disabled=true;const n=await loadDetails(l);$("#btnAllC").disabled=false;if(n)status(`Contactos cargados: ${n}.`)};
+$("#btnTable").onclick=()=>{tableView=!tableView;$("#btnTable").setAttribute("aria-pressed",tableView);render()};
+$("#btnExport").onclick=()=>{
+  const rows=filtered().map(it=>({"Nombre":it.name,"Rubro":it.rubro,"Dirección":it.address,"Teléfono":it.phone,"Correo":it.email,"Sitio web":it.web,"Contacto":it.contact,
+    "Distancia (km)":it.dist!=null?+it.dist.toFixed(2):"","Estado":it.state.label,"Última venta":fmtD(it.client?.last),"Días sin venta":it.state.days??"",
+    "Nombre en base de clientes":it.client?.name||"","RUT / RUC":it.client?.rut||"","Vendedor":it.client?.seller||"",
+    "Latitud":it.lat,"Longitud":it.lng,"Google Maps":placeHref(it),"País":COUNTRY[country].label,"Fuente":it.source}));
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Prospectos");
+  XLSX.writeFile(wb,`prospectos_${country}_${deacc(($("#q").value||"busqueda").toLowerCase()).replace(/[^a-z0-9]+/g,"-")}_${new Date().toISOString().slice(0,10)}.xlsx`);
+};
+
+/* ---------- Ajustes ---------- */
+function ruleNote(){$("#ruleNote").textContent=`Hasta ${settings.activeM} meses sin venta: activo. Más de ${settings.activeM} y hasta ${settings.lostM}: perdido. Más de ${settings.lostM}: antiguo perdido.`}
+$("#btnSettings").onclick=()=>{
+  $("#actM").value=settings.activeM;$("#lostM").value=settings.lostM;ruleNote();clientsInfo();
+  $("#keyInfo").textContent=GOOGLE_KEY?"Conectada con la key de la empresa.":apiKey()?"Conectada con la key ingresada en este dispositivo.":"Sin conectar.";
+  const u=usage();$("#limS").value=settings.limits.search;$("#limD").value=settings.limits.details;$("#limF").value=settings.limits.facade;
+  $("#usageInfo").textContent=`Hoy: ${u.d.search} consultas de búsqueda, ${u.d.details} contactos y ${u.d.facade} fachadas. Este mes: ${u.m.search}, ${u.m.details} y ${u.m.facade}.`;
+  $("#dlg").showModal();
+};
+[["limS","search"],["limD","details"],["limF","facade"]].forEach(([id,k])=>$("#"+id).onchange=()=>{settings.limits[k]=Math.max(0,parseInt($("#"+id).value)||0);saveSettings()});
+$("#actM").onchange=$("#lostM").onchange=()=>{
+  const a=Math.max(1,+$("#actM").value||3),l=Math.max(a,+$("#lostM").value||4);settings.activeM=a;settings.lostM=l;$("#lostM").value=l;saveSettings();ruleNote();
+  results.forEach(it=>it.state=clientState(it.client));if(results.length)render();
+};
+
+setCountry(country,false);
+boot();
+
+/* ---------- Base de clientes Grupo TX desde el servidor (app única) ---------- */
+let serverClients=false;
+async function loadServerClients(){
+  try{
+    if(store.get("tx_clients",[]).length||!window.supabase) return;
+    const sb=supabase.createClient("https://xinnonzltoaoptnvkhhy.supabase.co","sb_publishable_DoSRSj0wmAR_UIX8tENXXQ_X5BS5a1q",{auth:{persistSession:true,autoRefreshToken:true}});
+    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    let all=[];
+    for(let from=0;;from+=1000){const {data,error}=await sb.from("sil_clientes").select("rut,razon_social,ultima_compra").range(from,from+999);if(error||!data)break;all=all.concat(data);if(data.length<1000)break}
+    if(!all.length) return;
+    prepClients(all.map(c=>({name:c.razon_social,rut:c.rut,last:c.ultima_compra?new Date(c.ultima_compra+"T12:00:00").toISOString():null,phone:"",address:"",seller:"",lat:null,lng:null})));
+    serverClients=true;clientsInfo();if(typeof results!=="undefined"&&results.length) rematch();
+  }catch(e){}
+}
+const _ci=clientsInfo;
+clientsInfo=function(){_ci();if(serverClients&&clients.length&&!store.get("tx_clients",[]).length)$("#clientsInfo").textContent+=" Base Grupo TX con despachos 2025-2026, cargada automáticamente (la fecha es el mes del último despacho). Si subes un archivo, se usa el tuyo.";};
+loadServerClients();
+</script>
+</body>
+</html>
