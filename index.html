@@ -192,7 +192,7 @@ const APPS = [
     icon:ic('<path d="M7 7l5-3 5 3"/><rect x="7" y="7" width="10" height="9"/><path d="M7 16l3 3h4l3-3"/><path d="M8 16l-1.5 5M16 16l1.5 5"/>'),
     check: async uid => { const { data } = await sb.from('profiles').select('rol,activo').eq('id', uid).maybeSingle(); return !!(data && data.activo && data.rol !== 'pendiente'); } },
   { id:'ent', name:'Entregas TX', short:'Entregas', color:'var(--c-ent)', url:'../entregas-tx/',
-    desc:'Guías asignadas, llegada con GPS, fotos, firma de recepción y devoluciones.',
+    desc:'Pendientes desde Excel, armado de rutas por capacidad, flota, entregas con firma y seguimiento para clientes.',
     icon:ic('<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>'),
     check: async uid => { const { data } = await sb.from('ent_usuarios').select('rol,activo').eq('id', uid).maybeSingle(); return !!(data && data.activo && data.rol !== 'pendiente'); } },
   { id:'pro', name:'Prospección', short:'Prospectos', color:'var(--c-pro)', url:PROSPECTOS_URL,
