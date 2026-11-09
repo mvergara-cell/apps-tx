@@ -498,7 +498,9 @@ function qTotals(q){let bruto=0,desc=0;q.items.forEach(i=>{const b=i.qty*i.price
 function qStatus(q){if(['borrador','enviada','negociacion','pendiente'].includes(q.status)&&q.status!=='borrador'){const exp=addD(pd(q.date),q.validDays);if(exp<TODAY)return 'vencida'}return q.status}
 function qExpiry(q){return addD(pd(q.date),q.validDays)}
 const openQ=q=>['enviada','negociacion','pendiente','borrador'].includes(qStatus(q));
-function visibleClients(){return can('ver_todo')?S.clients:S.clients.filter(c=>c.sellers.includes(S.me))}
+const sameName=(a,b)=>!!a&&!!b&&norm(a).replace(/\s+/g,' ')===norm(b).replace(/\s+/g,' ');
+function mine(c){return c.sellers.includes(S.me)||sameName(c.vendedor,me().name)}
+function visibleClients(){return can('ver_todo')?S.clients:S.clients.filter(mine)}
 function visibleQuotes(){return can('ver_todo')?S.quotes:S.quotes.filter(q=>q.userId===S.me)}
 function visibleVisits(){return can('ver_todo')?S.visits:S.visits.filter(v=>v.userId===S.me)}
 function lastVisit(cid){let l=null;S.visits.forEach(v=>{if(v.clientId===cid&&(!l||v.date>l.date))l=v});return l}
@@ -520,7 +522,7 @@ function sendMail(ev,subject,body,extraTo){const to=[...(S.cfg.on[ev]?S.cfg.emai
 
 /* ============ alerts ============ */
 function alertsFor(){
- const out=[];const cl=visibleClients();const qs=visibleQuotes();
+ const out=[];const cl=S.clients.filter(c=>mine(c)&&!(c.origen==='SAP'&&!lastVisit(c.id)));const qs=visibleQuotes();
  const scopeTasks=S.tasks.filter(t=>!t.done&&(can('ver_todo')&&me().role!=='vendedor'?true:t.userId===S.me));
  scopeTasks.filter(t=>t.date<ymd(TODAY)).forEach(t=>out.push({k:'t',sev:2,text:`Actividad vencida: ${t.title}`,sub:(C(t.clientId)||{}).name+' · '+fd(t.date),go:'#agenda'}));
  qs.filter(q=>openQ(q)&&q.status!=='borrador').forEach(q=>{const d=Math.ceil((qExpiry(q)-TODAY)/864e5);if(d>=0&&d<=S.cfg.expWarn)out.push({k:'q',sev:2,text:`${q.num} vence en ${d} día${d===1?'':'s'}`,sub:C(q.clientId).name+' · '+clp(qTotals(q).total),go:'#cotizacion/'+q.id});
@@ -538,7 +540,7 @@ const NAV=[
  ['Gestión',[['reportes','Dashboard gerencial','chart','dash_equipo'],['correos','Avisos por correo','mail'],['auditoria','Trazabilidad','hist'],['admin','Administración','gear','config']]]];
 function renderShell(){
  const route=(location.hash||'#inicio').slice(1).split('/')[0];
- const pv=visibleClients().filter(c=>daysSince(c.id)>=S.cfg.alerts[0]).length;
+ const pv=S.clients.filter(c=>mine(c)&&!(c.origen==='SAP'&&!lastVisit(c.id))).filter(c=>daysSince(c.id)>=S.cfg.alerts[0]).length;
  $('#side').innerHTML=`<div class="brand"><div class="mk">TX</div><div><b>CRM Comercial</b><span>Grupo TX</span></div></div>`+
   NAV.map(([g,items])=>`<div class="nav-g">${g}</div><nav class="nav">`+items.filter(i=>!i[3]||can(i[3])).map(([k,l,ic])=>`<a href="#${k}" class="${route===k||(route==='cliente'&&k==='clientes')||(route==='cotizacion'&&k==='cotizaciones')?'on':''}">${ico(ic)}${l}${k==='porvisitar'&&pv?`<span class="cnt">${pv}</span>`:''}</a>`).join('')+'</nav>').join('');
  $('#bnav').innerHTML=[['inicio','Inicio','home'],['clientes','Clientes','users'],['cotizaciones','Cotizar','doc'],['agenda','Agenda','cal'],['__menu','Más','more']].map(([k,l,ic])=>`<button data-bnav="${k}" class="${route===k?'on':''}">${ico(ic)}${l}</button>`).join('');
@@ -616,7 +618,7 @@ function teamTable(from){
 }
 
 /* ============ CLIENTS ============ */
-let CF={q:'',region:'',seller:'',age:'',seg:'',sort:'name'};
+let CF={q:'',region:'',seller:'',vsap:'',age:'',seg:'',sort:'name'};
 function vClients(){
  const cl=visibleClients();
  const sellers=S.users.filter(u=>u.role==='vendedor');
@@ -626,14 +628,15 @@ function vClients(){
   <input type="search" id="cf-q" placeholder="Nombre, RUT, razón social, contacto…" value="${esc(CF.q)}">
   <select id="cf-region"><option value="">Todas las regiones</option>${REGIONS.map(r=>`<option value="${r.id}" ${CF.region===r.id?'selected':''}>${r.name}</option>`).join('')}</select>
   ${can('ver_todo')?`<select id="cf-seller"><option value="">Todos los vendedores</option>${sellers.map(u=>`<option value="${u.id}" ${CF.seller===u.id?'selected':''}>${u.name}</option>`).join('')}</select>`:''}
+  ${(()=>{const vs=[...new Set(cl.map(c=>c.vendedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b));return vs.length?`<select id="cf-vsap"><option value="">Vendedor SAP: todos</option>${vs.map(v=>`<option ${CF.vsap===v?'selected':''}>${esc(v)}</option>`).join('')}</select>`:''})()}
   <select id="cf-age"><option value="">Última visita: todas</option>${S.cfg.alerts.map(a=>`<option value="${a}" ${CF.age==a?'selected':''}>Sin visita +${a} días</option>`).join('')}</select>
   <select id="cf-seg"><option value="">Segmento: todos</option>${['A','B','C'].map(s=>`<option ${CF.seg===s?'selected':''}>${s}</option>`).join('')}</select>
  </div><div id="cl-table"></div>`;
  const draw=()=>{
-  let rows=cl.filter(c=>{const q=norm(CF.q);if(q&&!norm([c.name,c.razon,c.rut,c.comuna,c.email,c.contacts.map(x=>x.name).join(' ')].join(' ')).includes(q))return false;if(CF.region&&c.region!==CF.region)return false;if(CF.seller&&!c.sellers.includes(CF.seller))return false;if(CF.age&&daysSince(c.id)<+CF.age)return false;if(CF.seg&&c.segment!==CF.seg)return false;return true});
-  const sorters={name:(a,b)=>a.name.localeCompare(b.name),days:(a,b)=>daysSince(b.id)-daysSince(a.id),region:(a,b)=>a.region.localeCompare(b.region)||a.comuna.localeCompare(b.comuna)};
-  rows.sort(sorters[CF.sort]);
-  $('#cl-table').innerHTML=rows.length?`<div class="tbl-w"><table><thead><tr><th class="s" data-sort="name">Cliente ↕</th><th class="hide-m">RUT</th><th class="s" data-sort="region">Región / comuna ↕</th><th class="hide-m">Vendedor</th><th class="s" data-sort="days">Última visita ↕</th><th class="hide-m">Última cotización</th></tr></thead><tbody>${rows.map(c=>{const lq=lastQuote(c.id);const lv=lastVisit(c.id);return `<tr class="click" data-go="#cliente/${c.id}"><td><b>${esc(c.name)}</b> <span class="chip" title="Segmento">${c.segment}</span><div class="small muted">${esc(c.type)}</div></td><td class="hide-m mono small">${c.rut}</td><td>${esc(c.comuna)}<div class="small muted">${regName(c.region)}</div></td><td class="hide-m"><span class="row">${c.sellers.map(avatar).join('')}</span></td><td>${agePill(daysSince(c.id))}<div class="small muted">${lv?fd(lv.date.slice(0,10)):''}</div></td><td class="hide-m">${lq?`<span class="mono small">${lq.num}</span><br>${stPill(lq)}`:'<span class="muted">—</span>'}</td></tr>`}).join('')}</tbody></table></div><p class="small muted">${rows.length} de ${cl.length} clientes</p>`:'<div class="card empty">No hay clientes que coincidan con los filtros.</div>';
+  let rows=cl.filter(c=>{const q=norm(CF.q);if(q&&!norm([c.name,c.razon,c.rut,c.comuna,c.email,c.contacts.map(x=>x.name).join(' ')].join(' ')).includes(q))return false;if(CF.region&&c.region!==CF.region)return false;if(CF.seller&&!c.sellers.includes(CF.seller))return false;if(CF.vsap&&c.vendedor!==CF.vsap)return false;if(CF.age&&daysSince(c.id)<+CF.age)return false;if(CF.seg&&c.segment!==CF.seg)return false;return true});
+  const sorters={compra:(a,b)=>(b.ultimaCompra||'').localeCompare(a.ultimaCompra||''),name:(a,b)=>a.name.localeCompare(b.name),days:(a,b)=>daysSince(b.id)-daysSince(a.id),region:(a,b)=>a.region.localeCompare(b.region)||a.comuna.localeCompare(b.comuna)};
+  rows.sort(sorters[CF.sort]);const total=rows.length;const LIM=300;rows=rows.slice(0,LIM);
+  $('#cl-table').innerHTML=rows.length?`<div class="tbl-w"><table><thead><tr><th class="s" data-sort="name">Cliente ↕</th><th class="hide-m">RUT</th><th class="s" data-sort="region">Región / comuna ↕</th><th class="hide-m">Vendedor</th><th class="s" data-sort="days">Última visita ↕</th><th class="hide-m">Última cotización</th></tr></thead><tbody>${rows.map(c=>{const lq=lastQuote(c.id);const lv=lastVisit(c.id);return `<tr class="click" data-go="#cliente/${c.id}"><td><b>${esc(c.name)}</b> <span class="chip" title="Segmento">${c.segment}</span><div class="small muted">${esc(c.type)}</div></td><td class="hide-m mono small">${c.rut}</td><td>${esc(c.comuna)}<div class="small muted">${regName(c.region)}</div></td><td class="hide-m"><span class="row">${c.sellers.map(avatar).join('')}</span>${c.vendedor?`<div class="small muted">SAP: ${esc(c.vendedor)}</div>`:''}</td><td>${agePill(daysSince(c.id))}<div class="small muted">${lv?fd(lv.date.slice(0,10)):''}</div></td><td class="hide-m">${lq?`<span class="mono small">${lq.num}</span><br>${stPill(lq)}`:'<span class="muted">—</span>'}</td></tr>`}).join('')}</tbody></table></div><p class="small muted">${total} de ${cl.length} clientes${total>LIM?` · se muestran los primeros ${LIM}; usa la búsqueda o los filtros para encontrar el resto`:''}</p>`:'<div class="card empty">No hay clientes que coincidan con los filtros.</div>';
  };
  draw();
  M().oninput=e=>{const id=e.target.id;if(id&&id.startsWith('cf-')){CF[id.slice(3)]=e.target.value;draw()}};
@@ -652,7 +655,7 @@ function vToVisit(){
 let C360tab='todo';
 function vClient(id){
  const c=C(id);if(!c){M().innerHTML='<div class="card empty">Cliente no encontrado.</div>';return}
- if(!can('ver_todo')&&!c.sellers.includes(S.me)){M().innerHTML=noPerm('este cliente (asignado a otro vendedor)');return}
+ if(!can('ver_todo')&&!mine(c)){M().innerHTML=noPerm('este cliente (asignado a otro vendedor)');return}
  const qs=S.quotes.filter(q=>q.clientId===id).sort((a,b)=>b.date.localeCompare(a.date));
  const vs=S.visits.filter(v=>v.clientId===id).sort((a,b)=>b.date.localeCompare(a.date));
  const ops=S.opps.filter(o=>o.clientId===id);const ts=S.tasks.filter(t=>t.clientId===id&&!t.done).sort((a,b)=>a.date.localeCompare(b.date));
@@ -686,7 +689,7 @@ function vClient(id){
   </div>
   <div class="grid" style="align-content:start">
    <div class="card"><h2>Datos del cliente</h2>
-    <dl class="kv"><dt>Razón social</dt><dd>${esc(c.razon)}</dd><dt>Giro</dt><dd>${esc(c.giro)}</dd><dt>Dirección</dt><dd>${esc(c.address)}</dd><dt>Teléfono</dt><dd>${esc(c.phone)}</dd><dt>Correo</dt><dd>${esc(c.email)}</dd><dt>Vendedores</dt><dd>${c.sellers.map(s=>`<span class="row" style="margin-bottom:3px">${avatar(s)} ${esc(U(s).name)}</span>`).join('')}</dd><dt>Lista de precios</dt><dd>${esc(L.name)} <span class="muted small">(según región)</span></dd><dt>Creado</dt><dd>${fd(c.createdAt.slice(0,10))} por ${esc(U(c.createdBy).name)}</dd></dl>
+    <dl class="kv"><dt>Razón social</dt><dd>${esc(c.razon)}</dd><dt>Giro</dt><dd>${esc(c.giro)}</dd><dt>Dirección</dt><dd>${esc(c.address)}</dd><dt>Teléfono</dt><dd>${esc(c.phone)}</dd><dt>Correo</dt><dd>${esc(c.email)}</dd>${c.codigoSap||c.vendedor||c.ultimaCompra?`<dt>Vendedor SAP</dt><dd>${esc(c.vendedor||'—')}</dd><dt>Última compra SAP</dt><dd>${c.ultimaCompra?fd(c.ultimaCompra):'—'}</dd><dt>Frecuencia · canal</dt><dd>${esc([c.frecuencia,c.segmentoSap,c.canal].filter(Boolean).join(' · ')||'—')}</dd><dt>Código SAP</dt><dd class="mono">${esc(c.codigoSap||'—')}</dd>`:''}<dt>Vendedores</dt><dd>${c.sellers.map(s=>`<span class="row" style="margin-bottom:3px">${avatar(s)} ${esc(U(s).name)}</span>`).join('')}</dd><dt>Lista de precios</dt><dd>${esc(L.name)} <span class="muted small">(según región)</span></dd><dt>Creado</dt><dd>${fd(c.createdAt.slice(0,10))} por ${esc(U(c.createdBy).name)}</dd></dl>
    </div>
    <div class="card"><h2>Contactos</h2>${c.contacts.map(k=>`<div class="list-item"><div class="ic">${ico('users')}</div><div class="grow"><b>${esc(k.name)}</b><div class="small muted">${esc(k.role)}</div><div class="small">${esc(k.phone)} · ${esc(k.email)}</div></div></div>`).join('')}</div>
    <div class="card"><div class="card-h"><h2>Oportunidades</h2><a class="small" href="#pipeline">Pipeline →</a></div>${ops.length?ops.map(o=>`<div class="list-item"><div class="grow"><b>${esc(o.name)}</b><div class="small muted">${STAGES.find(s=>s[0]===o.stage)[1]} · ${clp(o.amount)}</div>${o.nextAction?`<div class="small">Próximo paso: ${esc(o.nextAction)} (${fds(o.nextDate)})</div>`:''}</div></div>`).join(''):'<div class="empty">Sin oportunidades.</div>'}</div>
