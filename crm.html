@@ -219,6 +219,29 @@ td.r,th.r{text-align:right}
 .sheet .tot div{display:flex;justify-content:space-between;padding:3px 0}
 .sheet .tot .T{border-top:2px solid #e4032e;font-weight:700;font-size:14px;padding-top:6px;margin-top:4px}
 .sheet-wrap{background:var(--panel-2);padding:16px;border-radius:8px;overflow-x:auto}
+.sheet.q2{position:relative;overflow:hidden;min-height:1120px;padding:34px 40px 30px;color:#1b1f24;font-size:11.5px;line-height:1.4;--navy:#1d2b4f}
+.q2 .hx{position:absolute;pointer-events:none}.q2 .hx1{left:0;top:0;width:240px;height:210px}.q2 .hx2{right:0;bottom:0;width:230px;height:200px}
+.q2>*:not(.hx){position:relative}
+.q2 .q-hd{display:grid;grid-template-columns:150px 1fr auto;gap:22px;align-items:center;margin-bottom:18px}
+.q2 .q-logo img{width:150px;height:auto;display:block}
+.q2 .q-co{display:grid;color:#5d6470;font-size:11px}.q2 .q-co b{color:#3d434d;font-size:12.5px}
+.q2 .q-num{text-align:center;display:grid;gap:1px;min-width:150px}.q2 .q-num span{font-size:15px;font-weight:700;color:var(--navy)}.q2 .q-num b{font-size:22px;color:#e4032e;font-family:var(--f-mono);letter-spacing:.02em}.q2 .q-num small{color:#5d6470;font-size:11px}
+.q2 h5{margin:16px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);border-bottom:2px solid var(--navy);display:inline-block;padding-bottom:2px}
+.q2 .q-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 18px}
+.q2 .q-kv{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline}.q2 .q-kv.w2{grid-column:span 2}
+.q2 .q-kv span{font-weight:700;color:#3d434d;white-space:nowrap}.q2 .q-kv b{font-weight:500;color:#1b1f24}
+.q2 .q-tb{width:100%;border-collapse:separate;border-spacing:0;margin-top:2px;border:1.5px solid var(--navy);border-radius:6px;overflow:hidden;font-size:11px}
+.q2 .q-tb th{background:#eef2f8;color:var(--navy);font-weight:700;padding:8px 10px;text-align:right;border-bottom:1.5px solid var(--navy);font-size:10.5px}
+.q2 .q-tb td{padding:7px 10px;text-align:right;border-bottom:1px solid #dfe5ee;color:#1b1f24;font-variant-numeric:tabular-nums}
+.q2 .q-tb tbody tr:nth-child(even) td{background:#f6f8fc}.q2 .q-tb tbody tr:last-child td{border-bottom:0}
+.q2 .q-tb td b{font-family:var(--f-mono);font-size:10.5px;color:#3d434d}.q2 .q-tb .u{color:#7a808a;font-size:10px}
+.q2 .q-foot{display:grid;grid-template-columns:1fr 250px;gap:24px;margin-top:14px;page-break-inside:avoid;break-inside:avoid}
+.q2 .q-obs h5{margin-top:0}.q2 .q-obs div{margin:2px 0}.q2 .q-obs span{font-weight:700;color:#3d434d}.q2 .q-obs .n{white-space:pre-line;color:#3d434d;margin-top:4px}
+.q2 .q-tot div{display:flex;justify-content:space-between;padding:4px 2px;font-size:12px}.q2 .q-tot span{font-weight:700;color:var(--navy)}.q2 .q-tot b{font-variant-numeric:tabular-nums}
+.q2 .q-tot .T{margin-top:4px;padding:8px 10px;background:var(--navy);color:#fff;border-radius:6px;font-size:14px}.q2 .q-tot .T span{color:#fff}
+.q2 .q-cond{margin-top:16px;page-break-inside:avoid;break-inside:avoid}.q2 .q-cond ul{margin:0;padding-left:18px;display:grid;gap:3px}
+.q2 .q-end{margin-top:18px;padding-top:8px;border-top:1px solid #dfe5ee;display:flex;justify-content:space-between;gap:10px;color:#7a808a;font-size:10px}
+@media (max-width:640px){.q2 .q-hd{grid-template-columns:1fr}.q2 .q-grid{grid-template-columns:1fr}.q2 .q-kv.w2{grid-column:auto}.q2 .q-foot{grid-template-columns:1fr}}
 
 /* pipeline */
 .kan{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:8px}
@@ -427,10 +450,12 @@ const STAGES=[['prospecto','Prospecto'],['contactado','Contactado'],['visita','V
 const LOSS=['Precio','Competencia','Cliente desistió','Producto no disponible','Plazo','Otro'];
 const REASONS=['Presentación comercial','Seguimiento de cotización','Levantamiento de obra','Reclamo / postventa','Cobranza','Capacitación técnica','Cierre de negocio'];
 const RESULTS=['Positivo – solicita cotización','Positivo – pedido confirmado','Neutro – requiere seguimiento','Negativo – sin interés por ahora','Cliente no disponible'];
-const PAY=['Contado','Transferencia anticipada','Crédito 30 días','Crédito 45 días','Crédito 60 días'];
+const PAY=['Línea de crédito','Contado','Transferencia anticipada','Crédito 30 días','Crédito 45 días','Crédito 60 días'];
+const DESCARGA=['Descarga manual','Descarga con grúa','Descarga con grúa horquilla','Sin descarga'];
+const DESPACHO=['Despacho','Retiro en planta'];
 const TASKT={visita:'Visita',llamada:'Llamada',seguimiento:'Seguimiento cotización',reunion:'Reunión',tarea:'Tarea'};
 const VCOLORS=['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s7)','var(--s6)','var(--s8)'];
-const DEFAULT_COND='Precios netos en pesos chilenos, más IVA.\nDespacho gratuito en radio urbano para pedidos sobre 5 toneladas.\nSujeto a disponibilidad de stock al momento de la orden de compra.';
+const DEFAULT_COND='Pedido mínimo para despacho en RM: $300.000 netos.\nEntrega de productos de línea: 3 a 7 días hábiles en RM, según stock.\nEntrega de productos a pedido (C/OC+10): 10 días hábiles en RM.\nRetiros en planta: confirmación en 24 a 48 hrs, según stock y volumen.\nNo se entrega material en planta RM sin número de retiro. Reservas de stock válidas por 24 hrs.\nCondiciones de venta mínimas y plazos en bodegas regionales: confirmar con Ejecutivo.\nDespacho a regiones sujeto a consolidación de carga según zona, revise con Ejecutivo.\nHorario de ingreso de pedidos: lunes a jueves de 8:00 a 16:30 hrs, viernes hasta las 13:00 hrs.';
 function fmtRut(n){const s=String(n);let sum=0,mul=2;for(let i=s.length-1;i>=0;i--){sum+=Number(s[i])*mul;mul=mul===7?2:mul+1}const dv=11-(sum%11);const d=dv===11?'0':dv===10?'K':String(dv);return s.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+d}
 function oppName(q){const it=q.items[0];return it?(it.name.split(' ').slice(0,2).join(' ')+' · '+(C(q.clientId)||{}).name):'Oportunidad'}
 
@@ -452,7 +477,7 @@ const NULLABLE=k=>/(Date|Id|At)$/.test(k)||k==='date';
 const COLS={
  clients:['id','name','razon','rut','giro','type','segment','region','comuna','address','phone','email','lat','lng','sellers','contacts','notes','createdBy','createdAt'],
  visits:['id','clientId','userId','date','address','reason','comments','result','next','followDate','photo','lat','lng','gps'],
- quotes:['id','num','clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','dupFrom','oppId','sentAt','createdAt','updatedAt','listId'],
+ quotes:['id','num','clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','dupFrom','oppId','sentAt','createdAt','updatedAt','listId','entrega'],
  opps:['id','clientId','userId','name','stage','amount','nextAction','nextDate','quoteIds','createdAt'],
  tasks:['id','userId','clientId','type','title','date','time','done'],
  comms:['id','clientId','userId','date','channel','text'],
@@ -864,11 +889,12 @@ function vQuotes(){
  M().oninput=e=>{if(e.target.id&&e.target.id.startsWith('qf-')){QF[e.target.id.slice(3)]=e.target.value;draw()}};M().onchange=M().oninput;
 }
 let DRAFT=null;
+function entregaDe(c){return c?{obra:'',dir:[c.address,c.comuna].filter(Boolean).join(', '),fono:c.phone||'',descarga:DESCARGA[0],despacho:DESPACHO[0],contacto:'',celular:'',admin:''}:{descarga:DESCARGA[0],despacho:DESPACHO[0]}}
 function newQuote(clientId,from){
  if(!can('cotizar')){toast('Tu perfil no puede crear cotizaciones.');return}
  const c=clientId?C(clientId):null;
- DRAFT={id:null,num:null,clientId:c?c.id:'',userId:me().role==='vendedor'?S.me:(c?c.sellers[0]:''),date:ymd(TODAY),validDays:30,status:'borrador',items:[],payment:'Crédito 30 días',conditions:DEFAULT_COND,notes:'',nextAction:'Llamar para confirmar recepción',nextDate:ymd(addD(TODAY,3)),history:[],contact:c?c.contacts[0].name:''};
- if(from){const o=S.quotes.find(q=>q.id===from);Object.assign(DRAFT,{clientId:o.clientId,userId:me().role==='vendedor'?S.me:o.userId,items:o.items.map(i=>({...i})),payment:o.payment,conditions:o.conditions,validDays:o.validDays,notes:o.notes,contact:o.contact,listId:o.listId,dupFrom:o.num})}
+ DRAFT={id:null,num:null,clientId:c?c.id:'',userId:me().role==='vendedor'?S.me:(c?c.sellers[0]:''),date:ymd(TODAY),validDays:30,status:'borrador',items:[],payment:'Línea de crédito',conditions:DEFAULT_COND,entrega:entregaDe(c),notes:'',nextAction:'Llamar para confirmar recepción',nextDate:ymd(addD(TODAY,3)),history:[],contact:c?c.contacts[0].name:''};
+ if(from){const o=S.quotes.find(q=>q.id===from);Object.assign(DRAFT,{clientId:o.clientId,userId:me().role==='vendedor'?S.me:o.userId,items:o.items.map(i=>({...i})),payment:o.payment,conditions:o.conditions,validDays:o.validDays,notes:o.notes,contact:o.contact,listId:o.listId,entrega:{...(o.entrega||{})},dupFrom:o.num})}
  location.hash='#cotizacion/nueva';
 }
 function vQuote(id){
@@ -904,7 +930,7 @@ function vQuote(id){
 function totalsBox(t){return `<div class="totals"><span>Subtotal bruto</span><span class="num">${clp(t.bruto)}</span><span>Descuentos</span><span class="num">− ${clp(t.desc)}</span><span>Neto</span><span class="num">${clp(t.neto)}</span><span>IVA 19%</span><span class="num">${clp(t.iva)}</span><span class="T">Total</span><span class="T num">${clp(t.total)}</span></div>`}
 function quoteEditor(q,isNew){
  const clients=visibleClients().slice().sort((a,b)=>a.name.localeCompare(b.name));
- const c=q.clientId?C(q.clientId):null;if(c&&!q.listId)q.listId=listFor(c).id;const L=c?qList(q):null;
+ const c=q.clientId?C(q.clientId):null;if(c&&!q.listId)q.listId=listFor(c).id;const L=c?qList(q):null;if(!q.entrega)q.entrega=entregaDe(c);const E=q.entrega;
  const prods=S.products.filter(p=>p.active);
  const over=q.items.some(i=>(i.disc||0)>S.cfg.discLimit);
  M().innerHTML=`<div class="ph"><div><div class="eyebrow"><a href="#cotizaciones">Cotizaciones</a> / ${isNew?'nueva':q.num}</div><h1>${isNew?(q.dupFrom?'Nueva cotización (duplicada de '+q.dupFrom+')':'Nueva cotización'):'Editar '+q.num}</h1><p>${q.dupFrom?'Revisa cliente, productos, cantidades, precios y descuentos antes de guardar. La cotización original no se modifica.':'Elige la zona de precios; los precios se toman de esa lista.'}</p></div>
@@ -916,6 +942,15 @@ function quoteEditor(q,isNew){
    <div class="fld"><label>Atención a</label><select id="q-contact">${c?c.contacts.map(k=>`<option ${q.contact===k.name?'selected':''}>${esc(k.name)}</option>`).join(''):'<option value="">—</option>'}</select></div>
    <div class="fld"><label>Zona de precios <span class="req">*</span></label><select id="q-list" ${c?'':'disabled'}>${c?LISTS().map(l=>`<option value="${l.id}" ${L&&L.id===l.id?'selected':''}>${esc(l.name)}${listFor(c).id===l.id?' · sugerida':''}</option>`).join(''):'<option>Selecciona un cliente</option>'}</select><span class="hint">${c?'Región del cliente: '+esc(regName(c.region)):''}</span></div>
    ${c&&q._listChanged?`<div class="full note warn">${ico('alert')}<span>Hay productos con precios de otra zona. <button type="button" class="btn sm" id="reprice">Aplicar precios de “${esc(L.name)}”</button></span></div>`:''}
+   <div class="sect">Datos de entrega</div>
+   <div class="fld"><label>Sucursal / obra</label><input id="e-obra" value="${esc(E.obra)}"></div>
+   <div class="fld"><label>Teléfono compras</label><input id="e-fono" value="${esc(E.fono)}"></div>
+   <div class="fld full"><label>Dirección de despacho</label><input id="e-dir" value="${esc(E.dir)}"></div>
+   <div class="fld"><label>Tipo de despacho</label><select id="e-despacho">${DESPACHO.map(x=>`<option ${E.despacho===x?'selected':''}>${x}</option>`).join('')}</select></div>
+   <div class="fld"><label>Tipo de descarga</label><select id="e-descarga">${DESCARGA.map(x=>`<option ${E.descarga===x?'selected':''}>${x}</option>`).join('')}</select></div>
+   <div class="fld"><label>Contacto en obra</label><input id="e-contacto" value="${esc(E.contacto)}"></div>
+   <div class="fld"><label>Celular contacto</label><input id="e-celular" value="${esc(E.celular)}"></div>
+   <div class="fld"><label>Administrador de obra</label><input id="e-admin" value="${esc(E.admin)}"></div>
   </div>
   <h3 style="margin:16px 0 8px">Productos</h3>
   <div class="tbl-w"><table class="qitems"><thead><tr><th>Producto</th><th class="r">Cantidad</th><th class="r">Precio unit.</th><th class="r">Dcto. %</th><th class="r">Subtotal</th><th></th></tr></thead><tbody>
@@ -936,9 +971,9 @@ function quoteEditor(q,isNew){
    <div class="fld"><label>Cuándo <span class="req">*</span></label><input type="date" id="q-nextd" value="${q.nextDate}"><span class="hint">Se agenda automáticamente.</span></div>
   </div></div>
  </div>`;
- const collect=()=>{q.userId=$('#q-user').value;q.contact=$('#q-contact').value;q.date=$('#q-date').value;q.validDays=+$('#q-valid').value;q.payment=$('#q-pay').value;q.conditions=$('#q-cond').value;q.notes=$('#q-notes').value;q.nextAction=$('#q-next').value;q.nextDate=$('#q-nextd').value};
+ const collect=()=>{q.userId=$('#q-user').value;q.contact=$('#q-contact').value;q.date=$('#q-date').value;q.validDays=+$('#q-valid').value;q.payment=$('#q-pay').value;q.conditions=$('#q-cond').value;q.notes=$('#q-notes').value;q.nextAction=$('#q-next').value;q.nextDate=$('#q-nextd').value;const E2=q.entrega||(q.entrega={});['obra','fono','dir','despacho','descarga','contacto','celular','admin'].forEach(k=>{const el=$('#e-'+k);if(el)E2[k]=el.value})};
  const redraw=()=>{collect();const y=scrollY;quoteEditor(q,isNew);scrollTo(0,y)};
- $('#q-client').onchange=()=>{collect();const nc=C($('#q-client').value);const had=!!q.clientId;q.clientId=nc?nc.id:'';if(nc){q.contact=nc.contacts[0].name;if(me().role!=='vendedor')q.userId=nc.sellers[0];if(!q.listId)q.listId=listFor(nc).id;if(had&&q.items.length)q._listChanged=true;else{q.items.forEach(i=>{i.listPrice=qList(q).prices[i.code];i.price=i.listPrice})}}redraw()};
+ $('#q-client').onchange=()=>{collect();const nc=C($('#q-client').value);const had=!!q.clientId;q.clientId=nc?nc.id:'';if(nc){q.contact=nc.contacts[0].name;if(me().role!=='vendedor')q.userId=nc.sellers[0];if(!q.listId)q.listId=listFor(nc).id;const ne=entregaDe(nc);q.entrega={...ne,...Object.fromEntries(Object.entries(q.entrega||{}).filter(([k,v])=>v&&!['dir','fono'].includes(k)))};['dir','fono'].forEach(k=>{const el=$('#e-'+k);if(el)el.value=q.entrega[k]||''});if(had&&q.items.length)q._listChanged=true;else{q.items.forEach(i=>{i.listPrice=qList(q).prices[i.code];i.price=i.listPrice})}}redraw()};
  const ql=$('#q-list');if(ql)ql.onchange=()=>{collect();q.listId=ql.value;const L2=qList(q);if(q.items.length){q.items.forEach(i=>{i.listPrice=L2.prices[i.code];i.price=i.listPrice});toast('Precios actualizados a la zona '+L2.name)}q._listChanged=false;redraw()};
  const rp=$('#reprice');if(rp)rp.onclick=()=>{const L2=qList(q);q.items.forEach(i=>{i.listPrice=L2.prices[i.code];i.price=i.listPrice});q._listChanged=false;redraw();toast('Precios actualizados a la lista '+L2.name)};
  $('#q-addp').onchange=e=>{const p=P(e.target.value);if(!p)return;if(!q.clientId){toast('Primero selecciona el cliente para aplicar su lista de precios.');e.target.value='';return}const lp=qList(q).prices[p.code];const step=p.minQty>0?p.minQty:1;const ex=q.items.find(i=>i.code===p.code);if(ex)ex.qty+=step;else q.items.push({code:p.code,name:p.name,unit:p.unit,qty:step,price:lp,listPrice:lp,disc:0});redraw()};
@@ -980,15 +1015,30 @@ function loseModal(id){const q=S.quotes.find(x=>x.id===id);
  openModal('Marcar como perdida · '+q.num,`<form class="form"><div class="fld full"><label>Motivo de pérdida <span class="req">*</span></label><div class="checks">${LOSS.map((l,i)=>`<label><input type="radio" name="lr" value="${l}" ${i===0?'checked':''}> ${l}</label>`).join('')}</div></div><div class="fld"><label>Competidor (si aplica)</label><input id="l-comp" placeholder="Nombre del competidor"></div><div class="fld"><label>Precio de la competencia</label><input id="l-price" placeholder="Opcional"></div><div class="fld full"><label>Comentarios</label><textarea id="l-notes"></textarea></div></form>`,`<button class="btn" data-close>Cancelar</button><button class="btn bad" id="lOk">Confirmar pérdida</button>`,'narrow');
  $('#lOk').onclick=()=>{const reason=document.querySelector('input[name=lr]:checked').value;q.status='perdida';q.lost={reason,competitor:$('#l-comp').value,notes:$('#l-notes').value+($('#l-price').value?' Precio competencia: '+$('#l-price').value:''),date:ymd(TODAY)};q.history.push({ts:nowIso(),user:S.me,text:'Marcada como perdida · '+reason});saveQ(q);const o=S.opps.find(o=>o.id===q.oppId);if(o){o.stage='perdida';dbUpd('opps',o,['stage']).catch(ignore)}S.tasks.filter(t=>t.title.startsWith(q.num)&&!t.done).forEach(t=>{t.done=true;dbUpd('tasks',t,['done']).catch(ignore)});audit('Cotización',q.num,'Perdida','Motivo: '+reason);closeModal();rerender();toast('Cotización marcada como perdida. El motivo alimenta el análisis de pérdidas.')};
 }
-function pdfSheet(q){const c=C(q.clientId);const t=qTotals(q);const co=S.cfg.company;const u=U(q.userId);
- return `<div class="sheet"><div class="hd"><div class="logo">${co.logo?`<img src="${co.logo}" alt="" style="height:46px;max-width:140px;object-fit:contain">`:'<div class="m">TX</div>'}<div><div style="font-family:var(--f-display);font-weight:700;font-size:20px;color:#e4032e">${esc(co.name)}</div><div style="font-size:11px;color:#555">Morteros · Adhesivos · Cemento · Pinturas</div></div></div>
- <div style="text-align:right;font-size:11px;color:#444">${esc(co.razon)}<br>RUT ${co.rut}<br>${esc(co.dir)}<br>${co.fono} · ${co.web}</div></div>
- <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:18px 0 12px;gap:10px;flex-wrap:wrap"><div><div style="font-family:var(--f-display);font-size:22px;font-weight:700">COTIZACIÓN</div><div style="font-family:var(--f-mono);font-size:13px">N° ${q.num}</div></div><div style="text-align:right;font-size:11.5px">Fecha de emisión: <b>${fd(q.date)}</b><br>Válida hasta: <b>${fd(qExpiry(q))}</b> (${q.validDays} días)</div></div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px"><div class="box"><h4>Cliente</h4><b>${esc(c.razon)}</b><br>RUT ${c.rut}<br>${esc(c.address)}<br>${esc(c.comuna)}, ${regName(c.region)}<br>Atención: ${esc(q.contact||c.contacts[0].name)}</div><div class="box"><h4>Ejecutivo comercial</h4><b>${esc(u.name)}</b><br>${esc(u.email||'')}<br>${co.fono}<br><br>Forma de pago: <b>${esc(q.payment)}</b></div></div>
- <table><thead><tr><th>Código</th><th>Descripción</th><th>Unidad</th><th style="text-align:right">Cant.</th><th style="text-align:right">P. unitario</th><th style="text-align:right">Dcto.</th><th style="text-align:right">Total</th></tr></thead><tbody>${q.items.map(i=>`<tr><td style="font-family:var(--f-mono)">${i.code}</td><td>${esc(i.name)}</td><td>${esc(i.unit)}</td><td style="text-align:right">${i.qty.toLocaleString('es-CL')}</td><td style="text-align:right">${clp(i.price)}</td><td style="text-align:right">${i.disc?i.disc+'%':'—'}</td><td style="text-align:right">${clp(i.qty*i.price*(1-(i.disc||0)/100))}</td></tr>`).join('')}</tbody></table>
- <div class="tot" style="margin-top:12px"><div><span>Subtotal</span><span>${clp(t.bruto)}</span></div><div><span>Descuentos</span><span>− ${clp(t.desc)}</span></div><div><span>Neto</span><span>${clp(t.neto)}</span></div><div><span>IVA 19%</span><span>${clp(t.iva)}</span></div><div class="T"><span>TOTAL</span><span>${clp(t.total)}</span></div></div>
- <div class="box" style="margin-top:16px"><h4>Condiciones comerciales</h4><div style="white-space:pre-line">${esc(q.conditions)}</div>${q.notes?`<h4 style="margin-top:8px">Observaciones</h4>${esc(q.notes)}`:''}</div>
- <div style="margin-top:22px;padding-top:10px;border-top:1px solid #d9dde2;font-size:10.5px;color:#666;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>Consultas: ${esc(u.name)} · ${esc(u.email||'')} · ${co.fono}</span><span>${co.web}</span></div></div>`}
+const HEX=(x,y,r,f)=>{const p=[0,1,2,3,4,5].map(k=>{const a=Math.PI/180*(60*k-90);return (x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ');return `<polygon points="${p}" fill="${f}"/>`};
+const svgUri=x=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(x);
+const HEXBG=[svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 50 240 210" width="240" height="210">${HEX(60,40,70,'#dde7f4')+HEX(185,40,70,'#e7eef8')+HEX(0,150,70,'#d3dff0')+HEX(60,40,40,'#c3d3ea')}</svg>`),svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 200" width="230" height="200">${HEX(240,90,70,'#dde7f4')+HEX(120,200,70,'#e7eef8')+HEX(300,200,70,'#d3dff0')+HEX(200,215,45,'#c3d3ea')}</svg>`)];
+function pdfSheet(q){const c=C(q.clientId);const t=qTotals(q);const co=S.cfg.company;const u=U(q.userId);const E=q.entrega||{};
+ const logo=`<img alt="Grupo TX" width="150" height="91" src="${svgUri(TXLOGO.replace('viewBox="0 0 1181.46 500"','viewBox="0 0 1181.46 715.12" width="1181" height="715"').replace(' style="width:100%;height:auto;display:block"','').split('var(--brand)').join('#e4032e').split('currentColor').join('#1b1f24'))}">`;
+ const kv=(l,v,cls='')=>`<div class="q-kv ${cls}"><span>${l}</span><b>${esc(v||'—')}</b></div>`;
+ const cond=String(q.conditions||'').split('\n').map(x=>x.trim()).filter(Boolean);
+ const obs=[['Contacto',E.contacto],['Celular',E.celular],['Administrador',E.admin]].filter(x=>x[1]);
+ return `<div class="sheet q2"><img class="hx hx1" alt="" src="${HEXBG[0]}"><img class="hx hx2" alt="" src="${HEXBG[1]}">
+ <div class="q-hd"><div class="q-logo">${co.logo?`<img src="${co.logo}" alt="">`:logo}</div>
+  <div class="q-co"><b>${esc(co.razon)}</b><span>RUT: ${esc(co.rut)}</span><span>Dirección de Facturación: ${esc(co.dir)}</span></div>
+  <div class="q-num"><span>Cotización</span><b>${esc(q.num||'Borrador')}</b><small>${fd(q.date)}</small><small>Válida hasta ${fd(qExpiry(q))}</small></div></div>
+ <h5>Datos de cliente</h5>
+ <div class="q-grid">${kv('Razón social',c.razon||c.name)}${kv('Teléfono compras',E.fono||c.phone)}${kv('Segmento',c.segmentoSap||c.segment)}${kv('RUT cliente',c.rut)}${kv('Medio de pago',q.payment)}${kv('Sucursal / obra',E.obra)}</div>
+ <h5>Datos de entrega</h5>
+ <div class="q-grid">${kv('Dirección de despacho',E.dir||[c.address,c.comuna].filter(Boolean).join(', '),'w2')}${kv('Tipo de descarga',E.descarga)}${kv('Tipo de despacho',E.despacho)}${kv('Atención a',q.contact||(c.contacts[0]||{}).name)}${kv('Zona de precios',(qList(q)||listFor(c)).name)}</div>
+ <h5>Datos de ejecutivo</h5>
+ <div class="q-grid">${kv('Ejecutivo',u.name)}${kv('Correo electrónico',u.email)}</div>
+ <h5>Pedido</h5>
+ <table class="q-tb"><thead><tr><th style="text-align:left">Código · Producto</th><th>Precio ($)</th><th>Cantidad</th>${q.items.some(i=>i.disc)?'<th>Dcto.</th>':''}<th>Subtotal ($)</th></tr></thead><tbody>${q.items.map(i=>`<tr><td style="text-align:left"><b>${esc(i.code)}</b> ${esc(i.name)}${i.unit?` <span class="u">${esc(i.unit)}</span>`:''}</td><td>${clp(i.price)}</td><td>${i.qty.toLocaleString('es-CL')}</td>${q.items.some(x=>x.disc)?`<td>${i.disc?i.disc+'%':'—'}</td>`:''}<td>${clp(i.qty*i.price*(1-(i.disc||0)/100))}</td></tr>`).join('')}</tbody></table>
+ <div class="q-foot"><div class="q-obs"><h5>Observaciones</h5>${obs.map(([l,v])=>`<div><span>${l}:</span> ${esc(v)}</div>`).join('')}${q.notes?`<div class="n">${esc(q.notes)}</div>`:''}${!obs.length&&!q.notes?'<div class="n">—</div>':''}</div>
+  <div class="q-tot">${t.desc?`<div><span>Subtotal</span><b>${clp(t.bruto)}</b></div><div><span>Descuentos</span><b>− ${clp(t.desc)}</b></div>`:''}<div><span>Neto</span><b>${clp(t.neto)}</b></div><div><span>IVA 19%</span><b>${clp(t.iva)}</b></div><div class="T"><span>Total</span><b>${clp(t.total)}</b></div></div></div>
+ ${cond.length?`<div class="q-cond"><h5>Condiciones de venta</h5><ul>${cond.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+ <div class="q-end"><span>${esc(co.name)} · ${esc(co.web)}</span><span>Consultas: ${esc(u.name)} · ${esc(u.email||'')}</span></div></div>`}
 function pdfModal(id){const q=S.quotes.find(x=>x.id===id);openModal('PDF · '+q.num,`<div class="sheet-wrap">${pdfSheet(q)}</div>`,`<span class="small muted" style="margin-right:auto">Vista previa del PDF con formato corporativo</span><button class="btn" data-act="mailQ" data-id="${q.id}">${ico('send')}Enviar por correo</button><button class="btn pri" id="dlPdf">${ico('dl')}Descargar PDF</button>`,'wide');$('#dlPdf').onclick=async()=>{const b=$('#dlPdf');b.disabled=true;b.textContent='Generando…';const ok=await downloadPdf(q);b.disabled=false;b.innerHTML=ico('dl')+'Descargar PDF';if(ok)audit('Cotización',q.num,'PDF descargado','')}}
 function mailQModal(id){const q=S.quotes.find(x=>x.id===id);const c=C(q.clientId);const ct=c.contacts.find(k=>k.name===q.contact)||c.contacts[0];
  openModal('Enviar cotización por correo',`<form class="form" style="grid-template-columns:1fr"><div class="fld"><label>Para</label><input id="m-to" value="${esc(ct.email||c.email)}"></div><div class="fld"><label>CC</label><input id="m-cc" value="${esc(U(q.userId).email||'')}"></div><div class="fld"><label>Asunto</label><input id="m-sub" value="Cotización ${q.num} – ${esc(S.cfg.company.name)}"></div><div class="fld"><label>Mensaje</label><textarea id="m-body" rows="7">Estimado/a ${esc(ct.name.split(' ')[0])}:\n\nJunto con saludar, adjunto la cotización ${q.num} por un total de ${clp(qTotals(q).total)} (IVA incluido), válida hasta el ${fd(qExpiry(q))}.\n\nQuedo atento/a a sus comentarios.\n\nSaludos,\n${esc(U(q.userId).name)}\n${esc(S.cfg.company.name)}</textarea></div><div class="note">${ico('doc')}<span>Se descargará ${q.num}.pdf y se abrirá tu programa de correo con el mensaje listo. Adjunta el PDF descargado y envía.</span></div></form>`,`<button class="btn" data-close>Cancelar</button><button class="btn pri" id="mSend">${ico('send')}Descargar PDF y abrir correo</button>`,'narrow');
@@ -1192,12 +1242,12 @@ async function downloadPdf(q){
  if(!window.html2pdf){toast('No se pudo cargar el generador de PDF. Revisa tu conexión.');return false}
  const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff';host.innerHTML=pdfSheet(q);document.body.appendChild(host);
  const el=host.firstElementChild;el.style.boxShadow='none';el.style.maxWidth='794px';
- try{await html2pdf().set({margin:0,filename:q.num+'.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'pt',format:'a4',orientation:'portrait'},pagebreak:{mode:['avoid-all','css']}}).from(el).save();return true}
+ try{await html2pdf().set({margin:0,filename:q.num+'.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'pt',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],avoid:['tr','.q-foot','.q-cond','.q-grid','.q-hd','h5']}}).from(el).save();return true}
  catch(e){console.error(e);toast('No se pudo generar el PDF.');return false}finally{host.remove()}
 }
 function genPass(){const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';const r=crypto.getRandomValues(new Uint8Array(10));return 'TX-'+[...r].map(x=>a[x%a.length]).join('')}
 function saveCfg(){return dbRun(sb.from('crm_settings').update({value:S.cfg}).eq('key','cfg')).catch(ignore)}
-const QUPD=['clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','sentAt','updatedAt','listId'];
+const QUPD=['clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','sentAt','updatedAt','listId','entrega'];
 function saveQ(q){q.updatedAt=nowIso();return dbUpd('quotes',q,QUPD).catch(ignore)}
 async function callAdmin(body){const {data,error}=await sb.functions.invoke('crm-admin-users',{body});if(error){let msg=error.message;try{const j=await error.context.json();msg=j.error||msg}catch(_){}throw new Error(msg)}if(data&&data.error)throw new Error(data.error);return data}
 function credModal(name,email,pass,isNew){openModal(isNew?'Usuario creado':'Contraseña actualizada',`<p>${isNew?'Comparte estos datos con':'Nueva contraseña temporal de'} <b>${esc(name)}</b>. Al entrar puede cambiarla desde su menú de usuario.</p><dl class="kv"><dt>Dirección</dt><dd class="mono small">${esc(location.origin+location.pathname.replace(/crm\.html$/,''))}</dd><dt>Correo</dt><dd class="mono">${esc(email)}</dd><dt>Contraseña</dt><dd class="mono">${esc(pass)}</dd></dl>`,`<button class="btn pri" id="cpyCred">${ico('copy')}Copiar datos</button>`,'narrow');$('#cpyCred').onclick=()=>copyText(`Apps Grupo TX (elige CRM Comercial)\n${location.origin+location.pathname.replace(/crm\.html$/,'')}\nCorreo: ${email}\nContraseña: ${pass}`)}
