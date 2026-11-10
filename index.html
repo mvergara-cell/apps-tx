@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<script>(function(){function a(){try{var t=localStorage.getItem("tx-theme"),d=document.documentElement;if(t==="dark"||t==="light")d.dataset.theme=t;else delete d.dataset.theme}catch(e){}}a();addEventListener("storage",function(e){if(e.key==="tx-theme")a()})})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111214">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -79,6 +80,10 @@ button,input{font:inherit;color:inherit}
 .uchip .un{display:grid;text-align:left;line-height:1.15}
 .uchip .un b{font-size:12.5px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .uchip .un small{font-size:10.5px;color:var(--muted)}
+.thsel{display:grid;gap:6px}.thsel>span{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:4px}
+.seg button{border:0;background:transparent;color:var(--muted);border-radius:9px;padding:8px 6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.15)}
 .hello h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
 .hello p{margin:6px 0 0;color:var(--muted)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -286,10 +291,16 @@ function sheetNoAccess(a){
   $('#sh-ok').onclick = closeSheet;
   $('#sh-open').onclick = () => { closeSheet(); S.access[a.id] = 'pendiente'; openApp(a.id); };
 }
+function curTheme(){ try { return localStorage.getItem('tx-theme') || 'auto'; } catch(e){ return 'auto'; } }
+function setTheme(t){ try { if (t === 'auto') localStorage.removeItem('tx-theme'); else localStorage.setItem('tx-theme', t); } catch(e){}
+  const d = document.documentElement; if (t === 'auto') delete d.dataset.theme; else d.dataset.theme = t;
+  $$('iframe').forEach(f => { try { const fd = f.contentDocument && f.contentDocument.documentElement; if (fd) { if (t === 'auto') delete fd.dataset.theme; else fd.dataset.theme = t; } } catch(e){} }); }
 function accountSheet(){
   openSheet(`<h3>${esc(userName())}</h3><div style="color:var(--muted);font-size:13px">${esc(isChofer() ? 'Chofer · ' + S.session.user.email.split('@')[0] : S.session.user.email)}</div>
+    <div class="thsel" role="group" aria-label="Apariencia"><span>Apariencia</span><div class="seg">${[['auto','Automático'],['dark','Oscuro'],['light','Claro']].map(([k,l]) => `<button data-th="${k}" aria-pressed="${curTheme()===k}">${l}</button>`).join('')}</div></div>
     <div style="display:grid;gap:8px"><button class="btn" id="ac-home">Ir al menú principal</button><button class="btn" id="ac-reload">Actualizar permisos</button><button class="btn" id="ac-out" style="color:var(--bad)">Cerrar sesión</button></div>`);
   $('#ac-home').onclick = () => { closeSheet(); goHome(); };
+  $$('[data-th]').forEach(x => x.onclick = () => { setTheme(x.dataset.th); $$('[data-th]').forEach(y => y.setAttribute('aria-pressed', String(y === x))); });
   $('#ac-reload').onclick = async () => { closeSheet(); await checkAccess(); toast('Permisos actualizados'); };
   $('#ac-out').onclick = async () => { closeSheet(); await sb.auth.signOut(); };
 }
