@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grupo TX · Registro de Terreno</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--red:#e30613;--ink:#1d1d1f;--mute:#6b6b70;--line:#dcdcdf;--bg:#f5f5f7;--card:#ffffff;--gray:#9a9aa2;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#f2f2f4;--mute:#a0a0a8;--line:#3a3a40;--bg:#1a1a1d;--card:#26262b;--gray:#70707a;color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#f2f2f4;--mute:#a0a0a8;--line:#3a3a40;--bg:#1a1a1d;--card:#26262b;--gray:#70707a;color-scheme:dark}
+*{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--red);color:#fff;padding:14px 16px;font-weight:700;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header small{font-weight:400;opacity:.85;text-align:right}
+header a{color:#fff}
+nav{display:flex;gap:6px;padding:10px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line)}
+nav button{flex:none;border:1px solid var(--line);background:transparent;color:var(--ink);padding:8px 12px;border-radius:999px;font:inherit;cursor:pointer}
+nav button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main{padding:14px;max-width:960px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:19px}
+h3{margin:18px 0 8px;font-size:16px}
+.mute{color:var(--mute);font-size:13px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:76px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.row{grid-template-columns:1fr}}
+.btn{background:var(--red);color:#fff;border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.acciones{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}
+.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;background:transparent;color:var(--ink);font:inherit}
+.chip input{display:none}
+.chip:has(input:checked),.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.checks{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.check{display:flex;gap:8px;align-items:flex-start;color:var(--ink);font-size:14px;margin:0}
+.check input{width:auto;margin-top:3px}
+.part{display:grid;grid-template-columns:1fr 1.6fr 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.part .pf{margin:0;display:flex;align-items:center;gap:4px;color:var(--ink);font-size:13px;white-space:nowrap}
+.part .pf input{width:auto}
+.part .x{background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--mute);padding:8px 10px;cursor:pointer}
+@media (max-width:560px){.part{grid-template-columns:1fr 1fr}.part .pi-nombre{grid-column:1/-1}}
+.ac{position:relative}
+.sug{position:absolute;left:0;right:0;top:100%;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:280px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.sug button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--ink);padding:10px;font:inherit;cursor:pointer}
+.sug button:last-child{border-bottom:0}
+.sug button small{color:var(--mute);display:block}
+.sug button.nuevo{color:var(--red);font-weight:600}
+.sug .cargando{padding:10px;color:var(--mute);font-size:13px}
+.cli-ok{font-size:12px;color:#2e9d5b;margin-top:4px}
+.cli-new{font-size:12px;color:var(--red);margin-top:4px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi b{display:block;font-size:26px}
+.kpi span{font-size:12px;color:var(--mute)}
+.graficos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.graficos{grid-template-columns:1fr}}
+.chart-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative;min-height:260px}
+.chart-box h3{margin:0 0 8px;font-size:14px}
+.chart-box .cv{position:relative;height:220px}
+.chart-box.ancho{grid-column:1/-1}
+.tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line);margin-right:6px}
+.tag.v{color:var(--red);border-color:var(--red)}
+.aviso{background:#fff4d6;color:#5a4300;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.fotos a{display:block;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--bg)}
+.fotos img{width:100%;height:100%;object-fit:cover;display:block}
+details.mas summary{cursor:pointer;color:var(--mute);font-size:13px;margin-top:6px}
+details.mas p{margin:6px 0}
+.acc{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.acc:last-child{border-bottom:0}
+.acc small{display:block;color:var(--mute)}
+.sw{position:relative;width:46px;height:26px;flex:none}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.2s;cursor:pointer}
+.sw span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+span{background:var(--red)}
+.sw input:checked+span:before{transform:translateX(20px)}
+.gate{max-width:420px;margin:40px auto;padding:0 16px}
+.del{background:transparent;border:0;color:var(--mute);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;float:right}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;transition:transform .25s;font-size:14px;max-width:90%;z-index:20}
+#toast.on{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <span>GRUPO TX · Registro de Terreno</span>
+  <small id="estado-conexion">Conectando…</small>
+</header>
+<nav id="nav" hidden>
+  <button data-a="nav" data-v="panel">Panel</button>
+  <button data-a="nav" data-v="charla">Charla técnica</button>
+  <button data-a="nav" data-v="capacitacion">Capacitación</button>
+  <button data-a="nav" data-v="visita">Visita por reclamo</button>
+  <button data-a="nav" data-v="registros">Registros</button>
+  <button data-a="nav" data-v="accesos" id="nav-accesos" hidden>Accesos</button>
+</nav>
+<main id="app"></main>
+<div id="toast"></div>
+<script>
+/* ===================== Configuración ===================== */
+const SB_URL = 'https://xinnonzltoaoptnvkhhy.supabase.co';
+const SB_KEY = 'sb_publishable_DoSRSj0wmAR_UIX8tENXXQ_X5BS5a1q';
+const BUCKET = 'registro-terreno';
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+const EN_PORTAL = window.top !== window;
+
+const TEMAS = [
+  'Preparación de superficies de aplicación / sustratos',
+  'Preparación de la mezcla, dosificación de componentes, mezclado y tiempo de aplicación',
+  'Aplicación del producto, formas de aplicación',
+  'Cuidados en la aplicación y posterior puesta en marcha del producto',
+  'Riesgos y medidas de seguridad en la aplicación',
+  'Revisión del procedimiento de aplicación para adhesivos cementosos'
+];
+const TIPOS_CAP = ['Curso','Taller','Capacitación','Instrucción','Auditoría','Inspección','Charla de seguridad','Otros'];
+const PRODUCTOS = ['Autonivelante PrimerPro','Autonivelante','Adhesivo cementoso','Mortero','Otro'];
+const CAUSAS = ['Aplicación / procedimiento','Preparación de sustrato','Dosificación o mezcla','Condiciones de obra (humedad, temperatura, inundación)','Producto','Por determinar'];
+const ESTADOS = ['Abierto','En seguimiento','Cerrado'];
+const KIND_LABEL = { charla: 'Charla técnica', capacitacion: 'Capacitación', visita: 'Visita por reclamo' };
+const COLOR = { charla: '#e30613', capacitacion: '#1d1d1f', visita: '#9a9aa2' };
+
+/* ===================== Estado ===================== */
+let me = null;            // { id, nombre, email, admin }
+let registros = [];
+let vista = 'panel';
+let filtro = 'todos';
+let charts = {};
+let cliSel = null;        // cliente elegido de la base única { id, nombre, rut, comuna, direccion }
+let cliNuevo = false;     // el usuario eligió "crear cliente nuevo"
+let accesos = [];
+let ultimaCarga = 0;
+const urlCache = {};
+
+/* ===================== Utilidades ===================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const fmtFecha = f => f ? String(f).slice(0,10).split('-').reverse().join('-') : '';
+const mesKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function setConexion(html){ const el = $('#estado-conexion'); if (el) el.innerHTML = html; }
+
+/* ===================== Sesión y acceso ===================== */
+function pantallaLogin(msg){
+  $('#nav').hidden = true;
+  setConexion(EN_PORTAL ? '' : '<a href="./">Portal</a>');
+  $('#app').innerHTML = `<form class="card gate" id="login">
+    <h2>Ingresar</h2>
+    ${msg ? `<div class="aviso">${esc(msg)}</div>` : ''}
+    <label>Correo</label><input id="lg-email" type="email" autocomplete="username" required>
+    <label>Contraseña</label><input id="lg-pass" type="password" autocomplete="current-password" required>
+    <div class="acciones"><button class="btn" id="lg-btn" type="submit">Ingresar</button></div>
+    <p class="mute">Usa el mismo correo y contraseña de las apps Grupo TX.</p>
+  </form>`;
+  $('#login').onsubmit = async e => {
+    e.preventDefault();
+    const b = $('#lg-btn'); b.disabled = true; b.textContent = 'Ingresando…';
+    const { error } = await sb.auth.signInWithPassword({ email: $('#lg-email').value.trim(), password: $('#lg-pass').value });
+    if (error) return pantallaLogin(/invalid/i.test(error.message) ? 'Correo o contraseña incorrectos.' : error.message);
+    iniciar();
+  };
+}
+
+async function iniciar(){
+  setConexion('Conectando…');
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return pantallaLogin();
+  const [acc, prof] = await Promise.all([
+    sb.rpc('rt_tengo_acceso'),
+    sb.from('profiles').select('nombre,email,rol,activo').eq('id', session.user.id).maybeSingle()
+  ]);
+  const p = prof.data || {};
+  me = { id: session.user.id, email: session.user.email,
+         nombre: p.nombre || session.user.user_metadata?.nombre || session.user.email.split('@')[0],
+         admin: !!(p.activo && p.rol === 'admin') };
+  if (acc.error || !acc.data) {
+    $('#nav').hidden = true;
+    setConexion(esc(me.nombre));
+    $('#app').innerHTML = `<div class="card gate"><h2>Sin acceso a Registro de Terreno</h2>
+      <p>Tu cuenta (${esc(me.email)}) todavía no tiene acceso a este módulo. Pídele al administrador que te habilite en la pestaña <b>Accesos</b>.</p>
+      <div class="acciones">${EN_PORTAL ? '' : '<a class="btn" href="./">Volver al portal</a>'}
+      <button class="btn ghost" onclick="sb.auth.signOut().then(()=>location.reload())">Cerrar sesión</button></div></div>`;
+    return;
+  }
+  $('#nav').hidden = false;
+  $('#nav-accesos').hidden = !me.admin;
+  setConexion(`${esc(me.nombre)}${EN_PORTAL ? '' : ' · <a href="./">Portal</a>'}`);
+  render();
+  await cargar();
+}
+
+async function cargar(){
+  const { data, error } = await sb.from('registros').select('*').order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(2000);
+  if (error) { setConexion('Error de conexión'); toast('No se pudieron cargar los registros'); return; }
+  registros = data.map(r => ({ ...(r.datos || {}), id: r.id, kind: r.kind, fecha: r.fecha, cliente: r.cliente, cliente_id: r.cliente_id,
+    obra: r.obra, estado: r.estado, fotos: r.fotos || [], autor: r.autor, autor_nombre: r.autor_nombre, creado: r.created_at }));
+  ultimaCarga = Date.now();
+  if (vista === 'panel' || vista === 'registros') render();
+}
+
+const nombreAutor = r => r.autor_nombre || 'PM';
+
+/* ===================== Formularios ===================== */
+function filaPart(p = {}){
+  return `<div class="part">
+    <input class="pi-rut" placeholder="RUT" value="${esc(p.rut)}">
+    <input class="pi-nombre" placeholder="Nombre" value="${esc(p.nombre)}">
+    <input class="pi-cargo" placeholder="Cargo" value="${esc(p.cargo)}">
+    <label class="pf"><input type="checkbox" class="pi-firma" ${p.firma ? 'checked' : ''}> Firmó</label>
+    <button type="button" class="x" data-a="delPart" title="Quitar">✕</button>
+  </div>`;
+}
+
+function campoCliente(){
+  return `<label>Cliente</label>
+  <div class="ac">
+    <input name="cliente" data-cli autocomplete="off" placeholder="Busca por nombre o RUT en la base de clientes">
+    <div class="sug" hidden></div>
+  </div>
+  <div id="cli-info"></div>
+  <div id="cli-extra" hidden>
+    <div class="row">
+      <div><label>RUT del cliente (opcional)</label><input name="cli_rut" placeholder="12.345.678-9"></div>
+      <div><label>Comuna</label><input name="cli_comuna"></div>
+    </div>
+  </div>`;
+}
+const campoObra = () => `<label>Obra</label><input name="obra" list="obras-dl" autocomplete="off"><datalist id="obras-dl"></datalist>`;
+
+function formActividad(kind){
+  const esCap = kind === 'capacitacion';
+  return `<div id="form" class="card" data-kind="${kind}">
+    <h2>${KIND_LABEL[kind]}</h2>
+    <label>Nombre de la actividad</label>
+    <input name="nombre" placeholder="${esCap ? 'Ej: Capacitación aplicación de autonivelante' : 'Ej: Charla técnica adhesivos cementosos'}">
+    ${esCap ? `<label>Tipo de actividad</label>
+    <select name="tipo_act">${TIPOS_CAP.map(t => `<option>${esc(t)}</option>`).join('')}</select>` : ''}
+    ${campoCliente()}
+    <div class="row">
+      <div>${campoObra()}</div>
+      <div><label>Fecha</label><input type="date" name="fecha" value="${hoy()}"></div>
+    </div>
+    <div class="row">
+      <div><label>Duración (min)</label><input type="number" name="duracion" value="60"></div>
+      <div><label>Relator</label><input name="relator" value="${esc(me?.nombre || '')}"></div>
+    </div>
+    <label>Cargo</label>
+    <input name="cargo" value="Product Manager">
+    <label>Contenidos tratados</label>
+    <div class="checks">${TEMAS.map(t => `<label class="check"><input type="checkbox" name="temas" value="${esc(t)}" checked> ${esc(t)}</label>`).join('')}</div>
+    <h3>Participantes</h3>
+    <div id="partics">${[0,1,2,3,4].map(() => filaPart()).join('')}</div>
+    <button type="button" class="btn ghost" data-a="addPart">+ Agregar participante</button>
+    <label>Observaciones</label>
+    <textarea name="observaciones"></textarea>
+    <div class="acciones">
+      <button type="button" class="btn" data-a="guardar" data-t="${kind}">Guardar</button>
+      <button type="button" class="btn ghost" data-a="nav" data-v="panel">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function formVisita(){
+  return `<div id="form" class="card" data-kind="visita">
+    <h2>Visita por reclamo</h2>
+    ${campoCliente()}
+    <div class="row">
+      <div>${campoObra()}</div>
+      <div><label>Dirección</label><input name="direccion"></div>
+    </div>
+    <div class="row">
+      <div><label>Contacto en obra</label><input name="contacto"></div>
+      <div><label>Fecha de visita</label><input type="date" name="fecha" value="${hoy()}"></div>
+    </div>
+    <label>Producto</label>
+    <select name="producto">${PRODUCTOS.map(p => `<option>${esc(p)}</option>`).join('')}</select>
+    <label>Motivo del reclamo</label>
+    <textarea name="motivo" placeholder="Qué reporta el cliente"></textarea>
+    <label>Verificación en terreno</label>
+    <textarea name="verificacion" placeholder="Qué se revisó, cómo se aplicó, condiciones de obra, ensayos realizados"></textarea>
+    <label>Causa probable</label>
+    <select name="causa">${CAUSAS.map(c => `<option>${esc(c)}</option>`).join('')}</select>
+    <label>Solución ofrecida</label>
+    <textarea name="solucion"></textarea>
+    <div class="row">
+      <div><label>¿Requiere ensayo en laboratorio?</label><select name="lab"><option>No</option><option>Sí</option></select></div>
+      <div><label>Estado</label><select name="estado">${ESTADOS.map(e => `<option>${e}</option>`).join('')}</select></div>
+    </div>
+    <label>Fotos</label>
+    <input type="file" name="fotos" accept="image/*" multiple capture="environment">
+    <div class="acciones">
+      <button type="button" class="btn" data-a="guardar" data-t="visita">Guardar visita</button>
+      <button type="button" class="btn ghost" data-a="nav" data-v="panel">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+/* ===================== Buscador de clientes (base única Silos / CRM) ===================== */
+let sugeridos = [];
+const buscarClientes = debounce(async (input) => {
+  const box = input.parentElement.querySelector('.sug');
+  const q = input.value.trim();
+  if (q.length < 2) { box.hidden = true; return; }
+  const { data, error } = await sb.rpc('rt_buscar_clientes', { q });
+  if (input.value.trim() !== q) return;
+  sugeridos = error ? [] : (data || []);
+  const exacto = sugeridos.some(c => norm(c.nombre) === norm(q));
+  let html = sugeridos.map(c => `<button type="button" class="sug-i" data-id="${esc(c.id)}">
+      ${esc(c.nombre)}<small>${[c.rut, c.comuna, c.vendedor && 'Vendedor: ' + c.vendedor].filter(Boolean).map(esc).join(' · ')}</small></button>`).join('');
+  if (!exacto) html += `<button type="button" class="sug-i nuevo" data-nuevo="1">+ Crear cliente nuevo: “${esc(q)}”</button>`;
+  box.innerHTML = html;
+  box.hidden = false;
+}, 250);
+
+function infoCliente(){
+  const el = $('#cli-info'); if (!el) return;
+  $('#cli-extra').hidden = !cliNuevo;
+  el.innerHTML = cliSel ? `<div class="cli-ok">✓ Cliente de la base${cliSel.rut ? ' · ' + esc(cliSel.rut) : ''}${cliSel.comuna ? ' · ' + esc(cliSel.comuna) : ''}</div>`
+    : cliNuevo ? `<div class="cli-new">Cliente nuevo: se agregará a la base única de clientes al guardar.</div>` : '';
+}
+
+async function elegirCliente(id){
+  const c = sugeridos.find(x => x.id === id);
+  if (!c) return;
+  cliSel = c; cliNuevo = false;
+  const f = $('#form');
+  f.querySelector('[name="cliente"]').value = c.nombre;
+  const dir = f.querySelector('[name="direccion"]');
+  if (dir && !dir.value && c.direccion) dir.value = c.direccion;
+  f.querySelectorAll('.sug').forEach(s => s.hidden = true);
+  infoCliente();
+  const { data } = await sb.rpc('rt_obras_cliente', { p_cliente: c.id });
+  const dl = $('#obras-dl');
+  if (dl && data) dl.innerHTML = data.map(o => `<option value="${esc(o.obra)}">${esc(o.lugar || '')}</option>`).join('');
+  const ob = f.querySelector('[name="obra"]');
+  if (ob && data && data.length) ob.placeholder = `${data.length} obra(s) conocidas: toca para elegir o escribe`;
+}
+
+/* ===================== Guardado ===================== */
+function leerCampos(){
+  const d = {};
+  document.querySelectorAll('#form [name]').forEach(el => {
+    const n = el.name;
+    if (el.type === 'checkbox') { d[n] = d[n] || []; if (el.checked) d[n].push(el.value); }
+    else if (el.type === 'file') d[n] = [...el.files];
+    else d[n] = el.value.trim();
+  });
+  return d;
+}
+
+function leerParticipantes(){
+  return [...document.querySelectorAll('#partics .part')].map(row => ({
+    rut: row.querySelector('.pi-rut').value.trim(),
+    nombre: row.querySelector('.pi-nombre').value.trim(),
+    cargo: row.querySelector('.pi-cargo').value.trim(),
+    firma: row.querySelector('.pi-firma').checked
+  })).filter(p => p.rut || p.nombre);
+}
+
+// Reduce la foto antes de subirla (máx. 1600 px, JPEG)
+function comprimir(file){
+  return new Promise(res => {
+    if (!/^image\//.test(file.type)) return res(file);
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => res(b || file), 'image/jpeg', 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(file); };
+    img.src = url;
+  });
+}
+
+async function guardar(kind, btn){
+  const d = leerCampos();
+  if (!d.fecha) return toast('Falta la fecha');
+  if (!d.cliente) return toast('Indica el cliente');
+  if (kind === 'visita') { if (!d.motivo) return toast('Describe el motivo del reclamo'); }
+  else if (!d.nombre) return toast('Falta el nombre de la actividad');
+
+  btn.disabled = true; const txt = btn.textContent; btn.textContent = 'Guardando…';
+  try {
+    /* Cliente: si no se eligió de la base, se crea (o se reutiliza si ya existe ese RUT/nombre) */
+    let clienteId = cliSel && norm(cliSel.nombre) === norm(d.cliente) ? cliSel.id : null;
+    if (!clienteId) {
+      const { data, error } = await sb.rpc('rt_crear_cliente', { p_nombre: d.cliente, p_rut: d.cli_rut || '', p_comuna: d.cli_comuna || '', p_direccion: d.direccion || '' });
+      if (error) throw error;
+      clienteId = data;
+    }
+
+    const id = crypto.randomUUID();
+    const fotos = [];
+    if (kind === 'visita' && d.fotos && d.fotos.length) {
+      for (let i = 0; i < d.fotos.length; i++) {
+        btn.textContent = `Subiendo foto ${i + 1} de ${d.fotos.length}…`;
+        const blob = await comprimir(d.fotos[i]);
+        const path = `${id}/${i + 1}-${Date.now()}.jpg`;
+        const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || 'image/jpeg' });
+        if (error) throw error;
+        fotos.push(path);
+      }
+    }
+
+    const datos = { observaciones: d.observaciones || '' };
+    if (kind === 'visita') {
+      Object.assign(datos, {
+        direccion: d.direccion || '', contacto: d.contacto || '', producto: d.producto || '',
+        motivo: d.motivo, verificacion: d.verificacion || '', causa: d.causa || '',
+        solucion: d.solucion || '', lab: d.lab || 'No'
+      });
+    } else {
+      Object.assign(datos, {
+        nombre: d.nombre, duracion: d.duracion || '60', relator: d.relator || '',
+        cargo: d.cargo || '', temas: d.temas || [],
+        tipo_act: kind === 'capacitacion' ? (d.tipo_act || 'Capacitación') : 'Charla técnica',
+        participantes: leerParticipantes()
+      });
+    }
+
+    const { error } = await sb.from('registros').insert({
+      id, kind, fecha: d.fecha, cliente: d.cliente, cliente_id: clienteId, obra: d.obra || '',
+      estado: kind === 'visita' ? (d.estado || 'Abierto') : null,
+      datos, fotos, autor: me.id, autor_nombre: me.nombre
+    });
+    if (error) throw error;
+    toast('Registro guardado');
+    cliSel = null; cliNuevo = false;
+    vista = kind === 'visita' ? 'registros' : 'panel';
+    render(); window.scrollTo(0, 0);
+    cargar();
+  } catch(e){
+    btn.disabled = false; btn.textContent = txt;
+    toast('No se pudo guardar: ' + (e.message || e.code || 'error'));
+  }
+}
+
+async function cambiarEstado(id, estado){
+  const r = registros.find(x => x.id === id); if (!r || r.estado === estado) return;
+  const antes = r.estado; r.estado = estado; render();
+  const { error } = await sb.from('registros').update({ estado, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) { r.estado = antes; render(); toast('No se pudo actualizar el estado'); }
+}
+
+async function eliminar(id){
+  const r = registros.find(x => x.id === id); if (!r) return;
+  if (!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
+  const { error } = await sb.from('registros').delete().eq('id', id);
+  if (error) return toast('No se pudo eliminar');
+  registros = registros.filter(x => x.id !== id); render(); toast('Registro eliminado');
+}
+
+/* ===================== Panel ===================== */
+function vistaPanel(){
+  const actividades = registros.filter(r => r.kind !== 'visita');
+  const visitas = registros.filter(r => r.kind === 'visita');
+  const participantes = actividades.reduce((s,r) => s + (r.participantes || []).length, 0);
+  const abiertas = visitas.filter(r => r.estado !== 'Cerrado').length;
+  const cerradas = visitas.length - abiertas;
+  const pctCerradas = visitas.length ? Math.round(cerradas / visitas.length * 100) : 0;
+  const box = (id, t, cls = '') => `<div class="chart-box ${cls}"><h3>${t}</h3><div class="cv"><canvas id="${id}"></canvas></div></div>`;
+
+  return `
+  <div class="acciones" style="margin:0 0 14px">
+    <button class="btn" data-a="nav" data-v="charla">+ Charla técnica</button>
+    <button class="btn" data-a="nav" data-v="capacitacion">+ Capacitación</button>
+    <button class="btn" data-a="nav" data-v="visita">+ Visita por reclamo</button>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>${actividades.filter(r => r.kind === 'charla').length}</b><span>Charlas técnicas</span></div>
+    <div class="kpi"><b>${actividades.filter(r => r.kind === 'capacitacion').length}</b><span>Capacitaciones</span></div>
+    <div class="kpi"><b>${participantes}</b><span>Participantes capacitados</span></div>
+    <div class="kpi"><b>${abiertas}</b><span>Visitas abiertas · ${pctCerradas}% cerradas</span></div>
+  </div>
+  ${registros.length ? `<div class="graficos">
+    ${box('g-mes', 'Actividad por mes', 'ancho')}
+    ${box('g-estado', 'Estado de reclamos')}
+    ${box('g-causas', 'Causas probables')}
+    ${box('g-pm', 'Registros por PM')}
+    ${box('g-clientes', 'Clientes con más registros')}
+  </div>` : '<p class="mute">Aún no hay registros. Cuando los PM empiecen a cargar charlas y visitas, aquí aparecerán los gráficos.</p>'}`;
+}
+
+const contar = (arr, fn) => arr.reduce((m, x) => { const k = fn(x); if (k) m[k] = (m[k] || 0) + 1; return m; }, {});
+const top = (obj, n) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, n);
+const corto = s => s.length > 28 ? s.slice(0, 27) + '…' : s;
+
+function dibujarGraficos(){
+  if (!registros.length) return;
+  if (typeof Chart === 'undefined') {
+    document.querySelectorAll('.chart-box').forEach(b => b.insertAdjacentHTML('beforeend', '<p class="mute">Gráficos no disponibles en este momento.</p>'));
+    return;
+  }
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+  const cs = getComputedStyle(document.documentElement);
+  Chart.defaults.color = cs.getPropertyValue('--mute').trim() || '#6b6b70';
+  Chart.defaults.borderColor = cs.getPropertyValue('--line').trim() || '#dcdcdf';
+  Chart.defaults.font.family = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  const inkC = cs.getPropertyValue('--ink').trim() || '#1d1d1f';
+
+  const meses = [];
+  const hoyD = new Date();
+  for (let i = 5; i >= 0; i--) meses.push(mesKey(new Date(hoyD.getFullYear(), hoyD.getMonth() - i, 1)));
+  const labels = meses.map(m => { const [y, mo] = m.split('-'); return new Date(+y, +mo - 1, 1).toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }); });
+  const porMes = kind => meses.map(m => registros.filter(r => r.kind === kind && String(r.fecha || '').startsWith(m)).length);
+  charts.mes = new Chart($('#g-mes'), {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label: 'Charlas técnicas', data: porMes('charla'), backgroundColor: COLOR.charla },
+      { label: 'Capacitaciones', data: porMes('capacitacion'), backgroundColor: inkC },
+      { label: 'Visitas', data: porMes('visita'), backgroundColor: COLOR.visita }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  const visitas = registros.filter(r => r.kind === 'visita');
+  const est = contar(visitas, r => r.estado || 'Abierto');
+  charts.estado = new Chart($('#g-estado'), {
+    type: 'doughnut',
+    data: { labels: ESTADOS, datasets: [{ data: ESTADOS.map(e => est[e] || 0), backgroundColor: ['#e30613','#f5a623','#2e9d5b'] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  const causasTop = top(contar(visitas, r => r.causa || 'Sin dato'), 6);
+  charts.causas = new Chart($('#g-causas'), {
+    type: 'bar',
+    data: { labels: causasTop.map(c => corto(c[0])), datasets: [{ label: 'Visitas', data: causasTop.map(c => c[1]), backgroundColor: inkC }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  const pm = top(contar(registros, r => nombreAutor(r)), 10);
+  charts.pm = new Chart($('#g-pm'), {
+    type: 'bar',
+    data: { labels: pm.map(p => p[0]), datasets: [{ label: 'Registros', data: pm.map(p => p[1]), backgroundColor: '#e30613' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  const cli = top(contar(registros, r => r.cliente), 8);
+  charts.clientes = new Chart($('#g-clientes'), {
+    type: 'bar',
+    data: { labels: cli.map(c => corto(c[0])), datasets: [{ label: 'Registros', data: cli.map(c => c[1]), backgroundColor: '#9a9aa2' }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+/* ===================== Registros ===================== */
+const puedeBorrar = r => me && (me.admin || r.autor === me.id);
+
+function tarjeta(r){
+  const autor = `<span class="mute"> · ${esc(nombreAutor(r))}</span>`;
+  const del = puedeBorrar(r) ? `<button class="del" data-a="eliminar" data-id="${esc(r.id)}">Eliminar</button>` : '';
+  if (r.kind === 'visita') {
+    return `<div class="card">${del}
+      <span class="tag v">Visita</span><b>${esc(r.cliente)}</b>${autor}
+      <p class="mute">${esc(r.obra || '')} · ${fmtFecha(r.fecha)} · ${esc(r.producto || '')}</p>
+      <p><b>Motivo:</b> ${esc(r.motivo)}</p>
+      <p><b>Causa probable:</b> ${esc(r.causa || '—')}${r.lab === 'Sí' ? ' · Requiere laboratorio' : ''}</p>
+      ${(r.verificacion || r.solucion || r.contacto || r.direccion || r.observaciones) ? `<details class="mas"><summary>Ver detalle</summary>
+        ${r.direccion ? `<p><b>Dirección:</b> ${esc(r.direccion)}</p>` : ''}
+        ${r.contacto ? `<p><b>Contacto:</b> ${esc(r.contacto)}</p>` : ''}
+        ${r.verificacion ? `<p><b>Verificación:</b> ${esc(r.verificacion)}</p>` : ''}
+        ${r.solucion ? `<p><b>Solución ofrecida:</b> ${esc(r.solucion)}</p>` : ''}
+        ${r.observaciones ? `<p><b>Observaciones:</b> ${esc(r.observaciones)}</p>` : ''}
+      </details>` : ''}
+      ${r.fotos && r.fotos.length ? `<div class="fotos" data-fotos="${esc(r.id)}">${r.fotos.map(p => `<a target="_blank" rel="noopener" data-path="${esc(p)}"><img alt="Foto de la visita"></a>`).join('')}</div>` : ''}
+      <div class="chips" style="margin-top:10px">${ESTADOS.map(e => `<button class="chip ${r.estado === e ? 'on' : ''}" data-a="estado" data-id="${esc(r.id)}" data-e="${e}">${e}</button>`).join('')}</div>
+    </div>`;
+  }
+  const parts = r.participantes || [];
+  return `<div class="card">${del}
+    <span class="tag">${esc(r.kind === 'charla' ? 'Charla técnica' : r.tipo_act || 'Capacitación')}</span><b>${esc(r.nombre || 'Sin nombre')}</b>${autor}
+    <p class="mute">${esc(r.cliente)} · ${esc(r.obra || '')} · ${fmtFecha(r.fecha)}</p>
+    <p>${parts.length} participantes · ${esc(r.duracion)} min · ${esc(r.relator || '—')}</p>
+    ${r.observaciones ? `<p class="mute">${esc(r.observaciones)}</p>` : ''}
+    ${parts.length ? `<details class="mas"><summary>Ver participantes</summary>${parts.map(p => `<p>${esc(p.nombre)} <span class="mute">${esc([p.rut, p.cargo].filter(Boolean).join(' · '))}${p.firma ? ' · firmó' : ''}</span></p>`).join('')}</details>` : ''}
+  </div>`;
+}
+
+function vistaRegistros(){
+  const filtros = [['todos','Todos'],['charla','Charlas técnicas'],['capacitacion','Capacitaciones'],['visita','Visitas'],['abiertos','Abiertas'],['mios','Mis registros']];
+  const lista = registros.filter(r =>
+    filtro === 'todos' ||
+    (filtro === 'charla' && r.kind === 'charla') ||
+    (filtro === 'capacitacion' && r.kind === 'capacitacion') ||
+    (filtro === 'visita' && r.kind === 'visita') ||
+    (filtro === 'abiertos' && r.kind === 'visita' && r.estado !== 'Cerrado') ||
+    (filtro === 'mios' && r.autor === me?.id)
+  );
+  return `<div class="chips">${filtros.map(([k,l]) => `<button class="chip ${filtro === k ? 'on' : ''}" data-a="filtro" data-f="${k}">${l}</button>`).join('')}</div>
+    <div style="margin-top:12px">${lista.length ? lista.map(tarjeta).join('') : '<p class="mute">Sin registros todavía.</p>'}</div>`;
+}
+
+async function cargarFotos(){
+  const links = [...document.querySelectorAll('.fotos a[data-path]')];
+  const faltan = [...new Set(links.map(a => a.dataset.path).filter(p => !urlCache[p]))];
+  if (faltan.length) {
+    const { data } = await sb.storage.from(BUCKET).createSignedUrls(faltan, 3600);
+    (data || []).forEach(x => { if (x.signedUrl) urlCache[x.path] = x.signedUrl; });
+  }
+  links.forEach(a => { const u = urlCache[a.dataset.path]; if (u) { a.href = u; a.querySelector('img').src = u; } });
+}
+
+/* ===================== Accesos (solo administradores) ===================== */
+function vistaAccesos(){
+  return `<div class="card"><h2>Accesos al módulo</h2>
+    <p class="mute">Activa a los Product Managers que deben registrar charlas, capacitaciones y visitas. Todos los habilitados ven todos los registros. Los administradores entran siempre. Si alguien no aparece, primero debe crear su cuenta en el portal de Apps Grupo TX.</p>
+    <div id="acc-lista">${accesos.length ? accesos.map(u => `<div class="acc"><div><b>${esc(u.nombre || u.email)}</b><small>${esc(u.email)}${u.rol === 'admin' ? ' · administrador' : ''}</small></div>
+      <label class="sw" title="Acceso"><input type="checkbox" data-acc="${esc(u.id)}" ${u.acceso || u.rol === 'admin' ? 'checked' : ''} ${u.rol === 'admin' ? 'disabled' : ''}><span></span></label></div>`).join('') : '<p class="mute">Cargando…</p>'}</div></div>`;
+}
+async function cargarAccesos(){
+  const { data, error } = await sb.rpc('rt_accesos');
+  if (error) return toast('No se pudo cargar la lista de usuarios');
+  accesos = data || [];
+  if (vista === 'accesos') render();
+}
+
+/* ===================== Eventos ===================== */
+const acciones = {
+  nav: b => { vista = b.dataset.v; cliSel = null; cliNuevo = false; render(); window.scrollTo(0,0); if (vista === 'accesos') cargarAccesos(); },
+  addPart: () => $('#partics').insertAdjacentHTML('beforeend', filaPart()),
+  delPart: b => b.closest('.part').remove(),
+  guardar: b => guardar(b.dataset.t, b),
+  filtro: b => { filtro = b.dataset.f; render(); },
+  estado: b => cambiarEstado(b.dataset.id, b.dataset.e),
+  eliminar: b => eliminar(b.dataset.id)
+};
+
+document.addEventListener('click', e => {
+  const sug = e.target.closest('.sug-i');
+  if (sug) {
+    if (sug.dataset.nuevo) { sug.closest('.sug').hidden = true; cliSel = null; cliNuevo = true; infoCliente(); }
+    else elegirCliente(sug.dataset.id);
+    return;
+  }
+  if (!e.target.closest('.ac')) document.querySelectorAll('.sug').forEach(s => s.hidden = true);
+  const b = e.target.closest('[data-a]');
+  if (b && acciones[b.dataset.a]) acciones[b.dataset.a](b);
+});
+
+document.addEventListener('input', e => {
+  if (e.target.matches('[data-cli]')) {
+    if (cliSel && norm(cliSel.nombre) !== norm(e.target.value)) { cliSel = null; infoCliente(); }
+    buscarClientes(e.target);
+  }
+});
+
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.matches('[data-acc]')) {
+    t.disabled = true;
+    const { error } = await sb.rpc('rt_set_acceso', { p_id: t.dataset.acc, p_activo: t.checked });
+    t.disabled = false;
+    if (error) { t.checked = !t.checked; return toast('No se pudo guardar el acceso'); }
+    const u = accesos.find(x => x.id === t.dataset.acc); if (u) u.acceso = t.checked;
+    toast(t.checked ? 'Acceso habilitado' : 'Acceso retirado');
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.sug').forEach(s => s.hidden = true);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && me && Date.now() - ultimaCarga > 60000 && (vista === 'panel' || vista === 'registros')) cargar();
+});
+sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.reload(); });
+
+/* ===================== Render ===================== */
+function render(){
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === vista));
+  const vistas = {
+    panel: vistaPanel,
+    charla: () => formActividad('charla'),
+    capacitacion: () => formActividad('capacitacion'),
+    visita: formVisita,
+    registros: vistaRegistros,
+    accesos: vistaAccesos
+  };
+  if (vista === 'accesos' && !me?.admin) vista = 'panel';
+  $('#app').innerHTML = vistas[vista]();
+  if (vista === 'panel') dibujarGraficos();
+  if (vista === 'registros') cargarFotos();
+}
+
+iniciar();
+</script>
+</body>
+</html>
