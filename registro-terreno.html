@@ -11,6 +11,7 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#f2f2f4;--mute:#a0a0a8;--line:#3a3a40;--bg:#1a1a1d;--card:#26262b;--gray:#70707a;color-scheme:dark}}
 :root[data-theme="dark"]{--ink:#f2f2f4;--mute:#a0a0a8;--line:#3a3a40;--bg:#1a1a1d;--card:#26262b;--gray:#70707a;color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
 header{background:var(--red);color:#fff;padding:14px 16px;font-weight:700;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -500,7 +501,7 @@ function vistaPanel(){
 }
 
 const contar = (arr, fn) => arr.reduce((m, x) => { const k = fn(x); if (k) m[k] = (m[k] || 0) + 1; return m; }, {});
-const top = (obj, n) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, n);
+const topN = (obj, n) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, n);
 const corto = s => s.length > 28 ? s.slice(0, 27) + '…' : s;
 
 function dibujarGraficos(){
@@ -540,21 +541,21 @@ function dibujarGraficos(){
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
   });
 
-  const causasTop = top(contar(visitas, r => r.causa || 'Sin dato'), 6);
+  const causasTop = topN(contar(visitas, r => r.causa || 'Sin dato'), 6);
   charts.causas = new Chart($('#g-causas'), {
     type: 'bar',
     data: { labels: causasTop.map(c => corto(c[0])), datasets: [{ label: 'Visitas', data: causasTop.map(c => c[1]), backgroundColor: inkC }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 
-  const pm = top(contar(registros, r => nombreAutor(r)), 10);
+  const pm = topN(contar(registros, r => nombreAutor(r)), 10);
   charts.pm = new Chart($('#g-pm'), {
     type: 'bar',
     data: { labels: pm.map(p => p[0]), datasets: [{ label: 'Registros', data: pm.map(p => p[1]), backgroundColor: '#e30613' }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 
-  const cli = top(contar(registros, r => r.cliente), 8);
+  const cli = topN(contar(registros, r => r.cliente), 8);
   charts.clientes = new Chart($('#g-clientes'), {
     type: 'bar',
     data: { labels: cli.map(c => corto(c[0])), datasets: [{ label: 'Registros', data: cli.map(c => c[1]), backgroundColor: '#9a9aa2' }] },
