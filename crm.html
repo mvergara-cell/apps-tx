@@ -417,7 +417,8 @@ const COMUNAS={
  'Valdivia':['LR',-39.81,-73.25],'La Unión':['LR',-40.29,-73.08],'Puerto Montt':['LL',-41.47,-72.94],'Osorno':['LL',-40.57,-73.14],'Puerto Varas':['LL',-41.32,-72.98],'Castro':['LL',-42.48,-73.76],'Coyhaique':['AI',-45.57,-72.07],'Punta Arenas':['MA',-53.16,-70.91]};
 const REG_CENTER={AP:[-18.48,-70.31],TA:[-20.22,-70.14],AN:[-23.65,-70.4],AT:[-27.37,-70.33],CO:[-29.9,-71.25],VA:[-33.05,-71.55],RM:[-33.45,-70.66],OH:[-34.17,-70.74],ML:[-35.43,-71.66],NB:[-36.61,-72.1],BB:[-36.83,-73.05],AR:[-38.74,-72.6],LR:[-39.81,-73.25],LL:[-41.47,-72.94],AI:[-45.57,-72.07],MA:[-53.16,-70.91]};
 function geoOf(region,comuna){const k=Object.keys(COMUNAS).find(x=>norm(x)===norm(comuna));const p=k?COMUNAS[k].slice(1):(REG_CENTER[region]||REG_CENTER.RM);return {lat:p[0]+(Math.random()-.5)*.02,lng:p[1]+(Math.random()-.5)*.02}}
-const LISTS=[{id:'L-RM',name:'Región Metropolitana',f:1},{id:'L-VA',name:'Valparaíso',f:1.04},{id:'L-OH',name:"O'Higgins",f:1.05},{id:'L-ML',name:'Maule',f:1.07},{id:'L-BB',name:'Biobío',f:1.09},{id:'L-OT',name:'Otras regiones',f:1.12}];
+const LIST_ORDER=['L-RM','L-V1','L-V2','L-71','L-72','L-IV','L-VIII','L-IX','L-X','L-IVE'];
+const LISTS=()=>Object.values(S.lists).sort((a,b)=>{const i=LIST_ORDER.indexOf(a.id),j=LIST_ORDER.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)||a.name.localeCompare(b.name)});
 const ROLES={vendedor:'Vendedor',supervisor:'Jefe comercial',admin:'Administrador',gerencia:'Gerencia'};
 const PERM_DEF=[
  ['ver_todo','Ver clientes y cotizaciones de todos los vendedores'],['crear_cliente','Crear y editar clientes'],['registrar_visita','Registrar visitas'],['cotizar','Crear y editar cotizaciones'],['aprobar_desc','Aprobar descuentos sobre el límite'],['productos','Crear y editar productos'],['precios','Editar e importar listas de precios'],['config','Usuarios, permisos, correos y alertas'],['dash_equipo','Dashboard del equipo'],['exportar','Exportar a Excel']];
@@ -451,7 +452,7 @@ const NULLABLE=k=>/(Date|Id|At)$/.test(k)||k==='date';
 const COLS={
  clients:['id','name','razon','rut','giro','type','segment','region','comuna','address','phone','email','lat','lng','sellers','contacts','notes','createdBy','createdAt'],
  visits:['id','clientId','userId','date','address','reason','comments','result','next','followDate','photo','lat','lng','gps'],
- quotes:['id','num','clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','dupFrom','oppId','sentAt','createdAt','updatedAt'],
+ quotes:['id','num','clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','dupFrom','oppId','sentAt','createdAt','updatedAt','listId'],
  opps:['id','clientId','userId','name','stage','amount','nextAction','nextDate','quoteIds','createdAt'],
  tasks:['id','userId','clientId','type','title','date','time','done'],
  comms:['id','clientId','userId','date','channel','text'],
@@ -499,7 +500,8 @@ const me=()=>U(S.me);
 const SELLERS=()=>S.users.filter(u=>u.active&&(u.role==='vendedor'||u.id===S.me));
 const can=k=>!!(S.perms[me().role]||{})[k];
 const regName=id=>(REGIONS.find(r=>r.id===id)||{}).name||id;
-const listFor=c=>S.lists[S.regionList[c.region]]||S.lists['L-OT']||Object.values(S.lists)[0];
+const listFor=c=>S.lists[S.regionList[c.region]]||S.lists['L-RM']||Object.values(S.lists)[0];
+const qList=q=>S.lists[q.listId]||(q.clientId&&C(q.clientId)?listFor(C(q.clientId)):null);
 function qTotals(q){let bruto=0,desc=0;q.items.forEach(i=>{const b=i.qty*i.price;bruto+=b;desc+=b*(i.disc||0)/100});const neto=bruto-desc;return{bruto,desc,neto,iva:neto*.19,total:neto*1.19}}
 function qStatus(q){if(['borrador','enviada','negociacion','pendiente'].includes(q.status)&&q.status!=='borrador'){const exp=addD(pd(q.date),q.validDays);if(exp<TODAY)return 'vencida'}return q.status}
 function qExpiry(q){return addD(pd(q.date),q.validDays)}
@@ -866,7 +868,7 @@ function newQuote(clientId,from){
  if(!can('cotizar')){toast('Tu perfil no puede crear cotizaciones.');return}
  const c=clientId?C(clientId):null;
  DRAFT={id:null,num:null,clientId:c?c.id:'',userId:me().role==='vendedor'?S.me:(c?c.sellers[0]:''),date:ymd(TODAY),validDays:30,status:'borrador',items:[],payment:'Crédito 30 días',conditions:DEFAULT_COND,notes:'',nextAction:'Llamar para confirmar recepción',nextDate:ymd(addD(TODAY,3)),history:[],contact:c?c.contacts[0].name:''};
- if(from){const o=S.quotes.find(q=>q.id===from);Object.assign(DRAFT,{clientId:o.clientId,userId:me().role==='vendedor'?S.me:o.userId,items:o.items.map(i=>({...i})),payment:o.payment,conditions:o.conditions,validDays:o.validDays,notes:o.notes,contact:o.contact,dupFrom:o.num})}
+ if(from){const o=S.quotes.find(q=>q.id===from);Object.assign(DRAFT,{clientId:o.clientId,userId:me().role==='vendedor'?S.me:o.userId,items:o.items.map(i=>({...i})),payment:o.payment,conditions:o.conditions,validDays:o.validDays,notes:o.notes,contact:o.contact,listId:o.listId,dupFrom:o.num})}
  location.hash='#cotizacion/nueva';
 }
 function vQuote(id){
@@ -892,7 +894,7 @@ function vQuote(id){
    ${totalsBox(t)}
   </div>
   <div class="grid" style="align-content:start">
-   <div class="card"><h2>Condiciones</h2><dl class="kv"><dt>Cliente</dt><dd><a href="#cliente/${c.id}">${esc(c.name)}</a><br><span class="small muted">Atención: ${esc(q.contact||c.contacts[0].name)}</span></dd><dt>Lista aplicada</dt><dd>${esc(listFor(c).name)}</dd><dt>Forma de pago</dt><dd>${esc(q.payment)}</dd><dt>Vigencia</dt><dd>${q.validDays} días</dd><dt>Condiciones</dt><dd style="white-space:pre-line">${esc(q.conditions)}</dd><dt>Observaciones</dt><dd>${esc(q.notes)||'—'}</dd></dl></div>
+   <div class="card"><h2>Condiciones</h2><dl class="kv"><dt>Cliente</dt><dd><a href="#cliente/${c.id}">${esc(c.name)}</a><br><span class="small muted">Atención: ${esc(q.contact||c.contacts[0].name)}</span></dd><dt>Zona de precios</dt><dd>${esc((qList(q)||listFor(c)).name)}</dd><dt>Forma de pago</dt><dd>${esc(q.payment)}</dd><dt>Vigencia</dt><dd>${q.validDays} días</dd><dt>Condiciones</dt><dd style="white-space:pre-line">${esc(q.conditions)}</dd><dt>Observaciones</dt><dd>${esc(q.notes)||'—'}</dd></dl></div>
    ${!closed?`<div class="card"><h2>Seguimiento</h2><dl class="kv"><dt>Próxima acción</dt><dd>${esc(q.nextAction)||'—'}</dd><dt>Fecha</dt><dd>${q.nextDate?fd(q.nextDate):'—'}</dd></dl>${can('cotizar')&&mine?`<div class="fld" style="margin-top:10px"><label>Cambiar estado</label><select data-act-change="status" data-id="${q.id}">${['borrador','enviada','negociacion','pendiente'].map(s=>`<option value="${s}" ${q.status===s?'selected':''}>${STATUS[s]}</option>`).join('')}</select></div>`:''}</div>`:''}
    <div class="card"><h2>Historial</h2>${q.history.slice().reverse().map(h=>`<div class="list-item small"><div class="grow">${esc(h.text)}<div class="muted">${fdt(h.ts)} · ${esc(U(h.user).name)}</div></div></div>`).join('')}</div>
   </div>
@@ -902,18 +904,18 @@ function vQuote(id){
 function totalsBox(t){return `<div class="totals"><span>Subtotal bruto</span><span class="num">${clp(t.bruto)}</span><span>Descuentos</span><span class="num">− ${clp(t.desc)}</span><span>Neto</span><span class="num">${clp(t.neto)}</span><span>IVA 19%</span><span class="num">${clp(t.iva)}</span><span class="T">Total</span><span class="T num">${clp(t.total)}</span></div>`}
 function quoteEditor(q,isNew){
  const clients=visibleClients().slice().sort((a,b)=>a.name.localeCompare(b.name));
- const c=q.clientId?C(q.clientId):null;const L=c?listFor(c):null;
+ const c=q.clientId?C(q.clientId):null;if(c&&!q.listId)q.listId=listFor(c).id;const L=c?qList(q):null;
  const prods=S.products.filter(p=>p.active);
  const over=q.items.some(i=>(i.disc||0)>S.cfg.discLimit);
- M().innerHTML=`<div class="ph"><div><div class="eyebrow"><a href="#cotizaciones">Cotizaciones</a> / ${isNew?'nueva':q.num}</div><h1>${isNew?(q.dupFrom?'Nueva cotización (duplicada de '+q.dupFrom+')':'Nueva cotización'):'Editar '+q.num}</h1><p>${q.dupFrom?'Revisa cliente, productos, cantidades, precios y descuentos antes de guardar. La cotización original no se modifica.':'Los precios se toman de la lista de la región del cliente.'}</p></div>
+ M().innerHTML=`<div class="ph"><div><div class="eyebrow"><a href="#cotizaciones">Cotizaciones</a> / ${isNew?'nueva':q.num}</div><h1>${isNew?(q.dupFrom?'Nueva cotización (duplicada de '+q.dupFrom+')':'Nueva cotización'):'Editar '+q.num}</h1><p>${q.dupFrom?'Revisa cliente, productos, cantidades, precios y descuentos antes de guardar. La cotización original no se modifica.':'Elige la zona de precios; los precios se toman de esa lista.'}</p></div>
   <div class="row"><button class="btn" id="qCancel">Cancelar</button><button class="btn" id="qSaveDraft">Guardar borrador</button><button class="btn pri" id="qSave">${isNew?'Guardar y emitir':'Guardar cambios'}</button></div></div>
  <div class="grid g-main">
   <div class="card"><div class="form">
    <div class="fld"><label>Cliente <span class="req">*</span></label><select id="q-client"><option value="">Selecciona…</option>${clients.map(x=>`<option value="${x.id}" ${q.clientId===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
    <div class="fld"><label>Vendedor <span class="req">*</span></label><select id="q-user" ${me().role==='vendedor'?'disabled':''}>${SELLERS().map(u=>`<option value="${u.id}" ${q.userId===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>
    <div class="fld"><label>Atención a</label><select id="q-contact">${c?c.contacts.map(k=>`<option ${q.contact===k.name?'selected':''}>${esc(k.name)}</option>`).join(''):'<option value="">—</option>'}</select></div>
-   <div class="fld"><label>Lista de precios</label><input disabled value="${L?esc(L.name)+' · región '+regName(c.region):'Selecciona un cliente'}"></div>
-   ${c&&q._listChanged?`<div class="full note warn">${ico('alert')}<span>Cambiaste el cliente y su región usa la lista “${esc(L.name)}”. <button type="button" class="btn sm" id="reprice">Aplicar precios de esta lista</button></span></div>`:''}
+   <div class="fld"><label>Zona de precios <span class="req">*</span></label><select id="q-list" ${c?'':'disabled'}>${c?LISTS().map(l=>`<option value="${l.id}" ${L&&L.id===l.id?'selected':''}>${esc(l.name)}${listFor(c).id===l.id?' · sugerida':''}</option>`).join(''):'<option>Selecciona un cliente</option>'}</select><span class="hint">${c?'Región del cliente: '+esc(regName(c.region)):''}</span></div>
+   ${c&&q._listChanged?`<div class="full note warn">${ico('alert')}<span>Hay productos con precios de otra zona. <button type="button" class="btn sm" id="reprice">Aplicar precios de “${esc(L.name)}”</button></span></div>`:''}
   </div>
   <h3 style="margin:16px 0 8px">Productos</h3>
   <div class="tbl-w"><table class="qitems"><thead><tr><th>Producto</th><th class="r">Cantidad</th><th class="r">Precio unit.</th><th class="r">Dcto. %</th><th class="r">Subtotal</th><th></th></tr></thead><tbody>
@@ -936,9 +938,10 @@ function quoteEditor(q,isNew){
  </div>`;
  const collect=()=>{q.userId=$('#q-user').value;q.contact=$('#q-contact').value;q.date=$('#q-date').value;q.validDays=+$('#q-valid').value;q.payment=$('#q-pay').value;q.conditions=$('#q-cond').value;q.notes=$('#q-notes').value;q.nextAction=$('#q-next').value;q.nextDate=$('#q-nextd').value};
  const redraw=()=>{collect();const y=scrollY;quoteEditor(q,isNew);scrollTo(0,y)};
- $('#q-client').onchange=()=>{collect();const nc=C($('#q-client').value);const had=!!q.clientId;q.clientId=nc?nc.id:'';if(nc){q.contact=nc.contacts[0].name;if(me().role!=='vendedor')q.userId=nc.sellers[0];if(had&&q.items.length)q._listChanged=true;else{q.items.forEach(i=>{i.listPrice=listFor(nc).prices[i.code];i.price=i.listPrice})}}redraw()};
- const rp=$('#reprice');if(rp)rp.onclick=()=>{const L2=listFor(C(q.clientId));q.items.forEach(i=>{i.listPrice=L2.prices[i.code];i.price=i.listPrice});q._listChanged=false;redraw();toast('Precios actualizados a la lista '+L2.name)};
- $('#q-addp').onchange=e=>{const p=P(e.target.value);if(!p)return;if(!q.clientId){toast('Primero selecciona el cliente para aplicar su lista de precios.');e.target.value='';return}const lp=listFor(C(q.clientId)).prices[p.code];const ex=q.items.find(i=>i.code===p.code);if(ex)ex.qty+=p.minQty>1?p.minQty:100;else q.items.push({code:p.code,name:p.name,unit:p.unit,qty:p.unit==='tonelada'?p.minQty:p.unit==='galón'?20:100,price:lp,listPrice:lp,disc:0});redraw()};
+ $('#q-client').onchange=()=>{collect();const nc=C($('#q-client').value);const had=!!q.clientId;q.clientId=nc?nc.id:'';if(nc){q.contact=nc.contacts[0].name;if(me().role!=='vendedor')q.userId=nc.sellers[0];if(!q.listId)q.listId=listFor(nc).id;if(had&&q.items.length)q._listChanged=true;else{q.items.forEach(i=>{i.listPrice=qList(q).prices[i.code];i.price=i.listPrice})}}redraw()};
+ const ql=$('#q-list');if(ql)ql.onchange=()=>{collect();q.listId=ql.value;const L2=qList(q);if(q.items.length){q.items.forEach(i=>{i.listPrice=L2.prices[i.code];i.price=i.listPrice});toast('Precios actualizados a la zona '+L2.name)}q._listChanged=false;redraw()};
+ const rp=$('#reprice');if(rp)rp.onclick=()=>{const L2=qList(q);q.items.forEach(i=>{i.listPrice=L2.prices[i.code];i.price=i.listPrice});q._listChanged=false;redraw();toast('Precios actualizados a la lista '+L2.name)};
+ $('#q-addp').onchange=e=>{const p=P(e.target.value);if(!p)return;if(!q.clientId){toast('Primero selecciona el cliente para aplicar su lista de precios.');e.target.value='';return}const lp=qList(q).prices[p.code];const step=p.minQty>0?p.minQty:1;const ex=q.items.find(i=>i.code===p.code);if(ex)ex.qty+=step;else q.items.push({code:p.code,name:p.name,unit:p.unit,qty:step,price:lp,listPrice:lp,disc:0});redraw()};
  M().onchange=e=>{const f=e.target.dataset.f;if(f){const it=q.items[+e.target.dataset.i];it[f]=Math.max(0,+e.target.value||0);redraw()}else if(['q-valid','q-date'].includes(e.target.id)){redraw()}};
  M().oninput=null;
  M().onclick=e=>{const rm=e.target.closest('[data-rm]');if(rm){q.items.splice(+rm.dataset.rm,1);redraw()}};
@@ -1055,14 +1058,14 @@ function productForm(code){const p=code?P(code):null;const isNew=!p;const d=p||{
 let curList='L-RM';
 function vPrices(){
  const L=S.lists[curList];const ed=can('precios');
- M().innerHTML=`<div class="ph"><div><h1>Listas de precios</h1><p>Cada región usa una lista. La cotización toma automáticamente la lista de la región del cliente.</p></div>${ed?`<div class="row"><button class="btn" data-act="tplXls">${ico('doc')}Formato de plantilla</button><label class="btn pri" for="xlsIn" style="cursor:pointer">${ico('up')}Importar Excel</label><input type="file" id="xlsIn" accept=".xlsx,.xls,.csv" hidden></div>`:''}</div>
+ M().innerHTML=`<div class="ph"><div><h1>Listas de precios</h1><p>Una lista por zona. En cada cotización el vendedor elige la zona; se sugiere la de la región del cliente.</p></div>${ed?`<div class="row"><button class="btn" data-act="tplXls">${ico('doc')}Formato de plantilla</button><label class="btn pri" for="xlsIn" style="cursor:pointer">${ico('up')}Importar Excel</label><input type="file" id="xlsIn" accept=".xlsx,.xls,.csv" hidden></div>`:''}</div>
  <div class="grid g-main">
-  <div class="card"><div class="tabs">${LISTS.map(l=>`<button data-list="${l.id}" class="${curList===l.id?'on':''}">${l.name}</button>`).join('')}</div>
+  <div class="card"><div class="tabs">${LISTS().map(l=>`<button data-list="${l.id}" class="${curList===l.id?'on':''}">${l.name}</button>`).join('')}</div>
    <p class="small muted">Última actualización ${fdt(L.updated)} por ${esc(U(L.updatedBy).name)}. ${ed?'Edita un precio y presiona Enter o sal del campo para guardarlo.':'Solo lectura para tu perfil.'}</p>
    <div class="tbl-w"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th class="r">Precio base RM</th><th class="r">Precio ${esc(L.name)}</th><th class="r">Dif.</th></tr></thead><tbody>${S.products.filter(p=>p.active).map(p=>{const v=L.prices[p.code]||0;return `<tr><td class="mono small">${p.code}</td><td>${esc(p.name)}</td><td class="small">${esc(p.unit)}</td><td class="r num">${clp(S.lists['L-RM'].prices[p.code])}</td><td class="r">${ed?`<input type="number" class="num" data-price="${p.code}" value="${v}" style="width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);text-align:right">`:`<span class="num">${clp(v)}</span>`}</td><td class="r num small muted">${pct(v/S.lists['L-RM'].prices[p.code]-1)}</td></tr>`}).join('')}</tbody></table></div>
   </div>
   <div class="grid" style="align-content:start">
-   <div class="card"><h2>Región → lista</h2><div class="tbl-w"><table><tbody>${REGIONS.map(r=>`<tr><td>${r.name}</td><td>${ed?`<select data-reglist="${r.id}" style="padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel)">${LISTS.map(l=>`<option value="${l.id}" ${listFor({region:r.id}).id===l.id?'selected':''}>${l.name}</option>`).join('')}</select>`:esc(listFor({region:r.id}).name)}</td><td class="small muted num">${S.clients.filter(c=>c.region===r.id).length} clientes</td></tr>`).join('')}</tbody></table></div></div>
+   <div class="card"><h2>Zona sugerida por región</h2><div class="tbl-w"><table><tbody>${REGIONS.map(r=>`<tr><td>${r.name}</td><td>${ed?`<select data-reglist="${r.id}" style="padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel)">${LISTS().map(l=>`<option value="${l.id}" ${listFor({region:r.id}).id===l.id?'selected':''}>${l.name}</option>`).join('')}</select>`:esc(listFor({region:r.id}).name)}</td><td class="small muted num">${S.clients.filter(c=>c.region===r.id).length} clientes</td></tr>`).join('')}</tbody></table></div></div>
    <div class="card"><h2>Cambios recientes</h2>${S.audit.filter(a=>a.entity==='Lista de precios').slice(0,8).map(a=>`<div class="list-item small"><div class="grow"><b>${esc(a.ref)} · ${esc(a.action)}</b><div>${esc(a.detail)}</div><div class="muted">${fdt(a.ts)} · ${esc(U(a.user).name)}</div></div></div>`).join('')||'<div class="empty">Sin cambios.</div>'}</div>
   </div></div>`;
  M().onclick=e=>{const t=e.target.closest('[data-list]');if(t){curList=t.dataset.list;vPrices()}};
@@ -1194,7 +1197,7 @@ async function downloadPdf(q){
 }
 function genPass(){const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';const r=crypto.getRandomValues(new Uint8Array(10));return 'TX-'+[...r].map(x=>a[x%a.length]).join('')}
 function saveCfg(){return dbRun(sb.from('crm_settings').update({value:S.cfg}).eq('key','cfg')).catch(ignore)}
-const QUPD=['clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','sentAt','updatedAt'];
+const QUPD=['clientId','userId','date','validDays','status','items','payment','conditions','notes','contact','nextAction','nextDate','history','won','lost','sentAt','updatedAt','listId'];
 function saveQ(q){q.updatedAt=nowIso();return dbUpd('quotes',q,QUPD).catch(ignore)}
 async function callAdmin(body){const {data,error}=await sb.functions.invoke('crm-admin-users',{body});if(error){let msg=error.message;try{const j=await error.context.json();msg=j.error||msg}catch(_){}throw new Error(msg)}if(data&&data.error)throw new Error(data.error);return data}
 function credModal(name,email,pass,isNew){openModal(isNew?'Usuario creado':'Contraseña actualizada',`<p>${isNew?'Comparte estos datos con':'Nueva contraseña temporal de'} <b>${esc(name)}</b>. Al entrar puede cambiarla desde su menú de usuario.</p><dl class="kv"><dt>Dirección</dt><dd class="mono small">${esc(location.origin+location.pathname.replace(/crm\.html$/,''))}</dd><dt>Correo</dt><dd class="mono">${esc(email)}</dd><dt>Contraseña</dt><dd class="mono">${esc(pass)}</dd></dl>`,`<button class="btn pri" id="cpyCred">${ico('copy')}Copiar datos</button>`,'narrow');$('#cpyCred').onclick=()=>copyText(`Apps Grupo TX (elige CRM Comercial)\n${location.origin+location.pathname.replace(/crm\.html$/,'')}\nCorreo: ${email}\nContraseña: ${pass}`)}

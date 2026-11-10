@@ -169,6 +169,7 @@ let charts = {};
 let cliSel = null;        // cliente elegido de la base única { id, nombre, rut, comuna, direccion }
 let cliNuevo = false;     // el usuario eligió "crear cliente nuevo"
 let accesos = [];
+let catalogo = [];
 let ultimaCarga = 0;
 const urlCache = {};
 
@@ -238,6 +239,7 @@ async function iniciar(){
   setConexion(`<a class="uchip" ${EN_PORTAL ? '' : 'href="./" title="Volver al portal"'}><span class="av">${esc(iniciales(me.nombre))}</span><span class="un"><b>${esc(me.nombre)}</b><small>${me.admin ? 'Administrador' : 'Product Manager'}</small></span></a>`);
   render();
   await cargar();
+  sb.rpc('rt_productos').then(({ data }) => { if (data && data.length) catalogo = data; });
 }
 
 async function cargar(){
@@ -324,7 +326,8 @@ function formVisita(){
       <div><label>Fecha de visita</label><input type="date" name="fecha" value="${hoy()}"></div>
     </div>
     <label>Producto</label>
-    <select name="producto">${PRODUCTOS.map(p => `<option>${esc(p)}</option>`).join('')}</select>
+    <input name="producto" list="prod-dl" autocomplete="off" placeholder="Escribe para buscar en el catálogo">
+    <datalist id="prod-dl">${(catalogo.length ? catalogo.map(p => p.name) : PRODUCTOS).map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
     <label>Motivo del reclamo</label>
     <textarea name="motivo" placeholder="Qué reporta el cliente"></textarea>
     <label>Verificación en terreno</label>
