@@ -506,7 +506,7 @@ function dbIns(t,o){const rows=(Array.isArray(o)?o:[o]).map(x=>toRow(x,COLS[t]))
 function dbUpd(t,o,fields,key='id'){const r=toRow(o,fields||COLS[t]);delete r[snake(key)];return dbRun(sb.from('crm_'+t).update(r).eq(snake(key),o[key]))}
 function dbFail(e){console.error(e);const msg=(e&&e.message)||String(e);const rls=/row-level security|permission denied/i.test(msg);toast((rls?'No tienes permiso para guardar este cambio.':'No se pudo guardar: '+msg)+' Se recargaron los datos.');reloadData()}
 const ignore=()=>{};
-async function fetchAll(t,order){let out=[],from=0;for(;;){let q=sb.from('crm_'+t).select('*').range(from,from+999);if(order)q=q.order(order,{ascending:true});q=q.order('id',{ascending:true});const {data,error}=await q;if(error)throw error;out=out.concat(data);if(data.length<1000)break;from+=1000}return out.map(fromRow)}
+async function fetchAll(t,order){let out=[],from=0;for(;;){let q=sb.from('crm_'+t).select('*').range(from,from+999);if(order)q=q.order(order,{ascending:true});if(order&&order!=='id'&&['clients','visits','quotes','opps','tasks','comms','price_lists'].includes(t))q=q.order('id',{ascending:true});const {data,error}=await q;if(error)throw error;out=out.concat(data);if(data.length<1000)break;from+=1000}return out.map(fromRow)}
 const num=x=>x==null?x:+x;
 let lastLoad=0;
 async function loadAll(){
